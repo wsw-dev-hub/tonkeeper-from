@@ -1,0 +1,16 @@
+{
+  "name": "tonkeeper-form",
+  "version": "1.0.0",
+  "description": "Formulário Web3 com Tonkeeper",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@tonconnect/ui": "^2.3.1"
+  },
+  "devDependencies": {
+    "vite": "^7.1.10"
+  }
+}
