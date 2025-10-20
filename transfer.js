@@ -10,13 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const status = document.getElementById('status');
   const backBtn = document.getElementById('backBtn');
 
-  // Verifica se a carteira está conectada
+  // Verifica conexão com a carteira
   if (!tonConnectUI.connected) {
     status.textContent = 'Status: Nenhuma carteira conectada. Redirecionando para login...';
-    setTimeout(() => {
-      window.location.href = 'index.html';
-    }, 2000);
+    window.location.href = 'index.html';
     return;
+  } else {
+    // Exibe o endereço da carteira conectada
+    const walletAddress = tonConnectUI.account?.address || 'Desconhecido';
+    status.textContent = `Status: Conectado como ${walletAddress}`;
   }
 
   // Lógica de transferência
@@ -25,8 +27,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const address = document.getElementById('address').value;
     const amount = document.getElementById('amount').value;
 
+    // Validação básica
     if (!address || !amount || amount <= 0) {
       status.textContent = 'Status: Insira um endereço e valor válidos.';
+      return;
+    }
+
+    // Validação simples de endereço TON (formato básico)
+    if (!address.startsWith('EQ') && !address.startsWith('UQ')) {
+      status.textContent = 'Status: Endereço inválido. Deve começar com EQ ou UQ.';
       return;
     }
 
@@ -35,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
         validUntil: Math.floor(Date.now() / 1000) + 300,
         messages: [
           {
-            address: address, // Endereço inserido pelo usuário
+            address: address,
             amount: (parseFloat(amount) * 1e9).toString() // Converte TON para nanoTON
           }
         ]
@@ -43,7 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       status.textContent = 'Status: Enviando transação...';
       const result = await tonConnectUI.sendTransaction(transaction);
-      status.textContent = `Status: Transação enviada! Hash: ${result.boc}`;
+      
+      // Mensagem detalhada da transação
+      status.textContent = `Transação concluída com sucesso!
+        - Hash: ${result.boc}
+        - Endereço de destino: ${address}
+        - Valor: ${amount} TON
+        - Rede: Testnet`;
     } catch (error) {
       console.error('Erro:', error);
       status.textContent = `Status: Erro - ${error.message || 'Falha na transação'}`;

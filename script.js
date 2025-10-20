@@ -11,18 +11,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   connectBtn.addEventListener('click', async () => {
     try {
-      if (!tonConnectUI.connected) {
-        status.textContent = 'Status: Conectando à carteira...';
-        await tonConnectUI.connectWallet();
-        status.textContent = 'Status: Carteira conectada! Redirecionando...';
-        // Redireciona para transfer.html após sucesso
-        setTimeout(() => {
-          window.location.href = 'transfer.html?connected=true';
-        }, 1000);
-      } else {
+      // Verifica se a carteira já está conectada
+      if (tonConnectUI.connected) {
         status.textContent = 'Status: Carteira já conectada! Redirecionando...';
-        window.location.href = 'transfer.html?connected=true';
+        window.location.href = 'transfer.html';
+        return;
       }
+
+      // Tenta conectar a carteira
+      status.textContent = 'Status: Conectando à carteira...';
+      await tonConnectUI.connectWallet();
+      status.textContent = 'Status: Carteira conectada! Redirecionando...';
+      window.location.href = 'transfer.html';
     } catch (error) {
       console.error('Erro:', error);
       status.textContent = `Status: Erro - ${error.message || 'Falha na conexão'}`;
