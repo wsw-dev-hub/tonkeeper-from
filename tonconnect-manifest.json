@@ -2,6 +2,6 @@
   "url": "http://localhost:3000/",
   "name": "Seu App Web3",
   "iconUrl": "http://localhost:3000/udx-icon.png",
-  "termsOfUseUrl": "http://localhost:3000/terms",
-  "privacyPolicyUrl": "http://localhost:3000/privacy"
+  "termsOfUseUrl": "https://wsw-dev-hub.github.io/tonkeeper-form/terms",
+  "privacyPolicyUrl": "https://wsw-dev-hub.github.io/tonkeeper-form/privacy"
 }
