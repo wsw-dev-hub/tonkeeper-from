@@ -18,20 +18,63 @@ export class TonService {
     console.log('TonConnectUI inicializado');
   }
 
-  // Verifica conexão com delay para garantir inicialização
-  async checkConnection() {
-    console.log('Verificando conexão com a carteira');
+  // Verifica conexão com retries
+  async checkConnection(maxRetries = 3, retryDelay = 2000, timeoutPerAttempt = 10000) {
+    console.log('Iniciando verificação de conexão com a carteira');
+    
     // Aguarda inicialização do SDK
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (this.tonConnectUI.connected) {
-      console.log('Conexão confirmada:', this.tonConnectUI.account?.address);
-      return {
-        connected: true,
-        address: this.tonConnectUI.account?.address || 'Desconhecido'
-      };
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Tentativa ${attempt} de verificação de conexão`);
+        return await new Promise((resolve, reject) => {
+          // Verifica diretamente tonConnectUI.connected
+          if (this.tonConnectUI.connected) {
+            console.log('Conexão detectada diretamente:', this.tonConnectUI.account?.address);
+            resolve({
+              connected: true,
+              address: this.tonConnectUI.account?.address || 'Desconhecido'
+            });
+            return;
+          }
+
+          // Fallback com onStatusChange
+          const unsubscribe = this.tonConnectUI.onStatusChange(
+            (walletInfo) => {
+              console.log('onStatusChange disparado:', walletInfo);
+              if (walletInfo) {
+                resolve({
+                  connected: true,
+                  address: walletInfo.account?.address || 'Desconhecido'
+                });
+                unsubscribe();
+              } else {
+                reject(new Error('Nenhuma carteira conectada'));
+              }
+            },
+            (error) => {
+              console.error('Erro em onStatusChange:', error);
+              reject(error);
+              unsubscribe();
+            }
+          );
+
+          // Timeout por tentativa
+          setTimeout(() => {
+            reject(new Error('Timeout na verificação da conexão'));
+            unsubscribe();
+          }, timeoutPerAttempt);
+        });
+      } catch (error) {
+        console.warn(`Tentativa ${attempt} falhou: ${error.message}`);
+        if (attempt === maxRetries) {
+          throw new Error(`Falha após ${maxRetries} tentativas: ${error.message}`);
+        }
+        console.log(`Aguardando ${retryDelay}ms antes da próxima tentativa`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
     }
-    throw new Error('Nenhuma carteira conectada');
   }
 
   // Conecta a carteira
