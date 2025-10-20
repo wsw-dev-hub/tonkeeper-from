@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const tonConnectUI = new TonConnectUI({
     /*manifestUrl: 'https://raw.githubusercontent.com/ton-connect/demo-dapp/main/tonconnect-manifest.json'
     manifestUrl: 'https://github.com/wsw-dev-hub/tonkeeper-from/blob/main/tonconnect-manifest.json'*/
-    manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-form/tonconnect-manifest.json',
-    network: 'testnet'
+    manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/tonconnect-manifest.json', // URL corrigida
+    network: 'testnet' // Testnet para evitar custos reais
   });
 
   const form = document.getElementById('tonForm');
