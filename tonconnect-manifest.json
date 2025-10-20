@@ -1,7 +1,7 @@
 {
-  "url": "http://localhost:3000/",
+  "url": "https://wsw-dev-hub.github.io/tonkeeper-from",
   "name": "Seu App Web3",
-  "iconUrl": "http://localhost:3000/udx-icon.png",
-  "termsOfUseUrl": "https://wsw-dev-hub.github.io/tonkeeper-form/terms",
-  "privacyPolicyUrl": "https://wsw-dev-hub.github.io/tonkeeper-form/privacy"
+  "iconUrl": "https://wsw-dev-hub.github.io/tonkeeper-from/udx-icon.png",
+  "termsOfUseUrl": "https://wsw-dev-hub.github.io/tonkeeper-from/terms/terms.html",
+  "privacyPolicyUrl": "https://wsw-dev-hub.github.io/tonkeeper-from/privacy/privacy.html"
 }
