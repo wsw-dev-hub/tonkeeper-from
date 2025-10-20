@@ -16,6 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const { connected, address } = await tonService.checkConnection();
       
       if (connected) {
+        // Armazenar endereço no localStorage
+        localStorage.setItem('authenticatedWallet', address);
+        console.log('Endereço armazenado no localStorage:', address);
         status.textContent = `Status: Carteira conectada (${address}). Redirecionando...`;
         console.log('Conexão confirmada, redirecionando para transfer.html');
         window.location.href = 'transfer.html';

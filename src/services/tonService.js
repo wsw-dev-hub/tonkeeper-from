@@ -2,7 +2,7 @@ import { TonConnectUI } from '@tonconnect/ui';
 
 export class TonService {
   constructor() {
-    // Limpar localStorage para evitar sessões corrompidas
+    // Limpar localStorage para evitar sessões corrompidas (exceto authenticatedWallet)
     try {
       localStorage.removeItem('ton-connect-storage_bridge-connection');
       localStorage.removeItem('ton-connect-storage_protocol-version');
@@ -12,7 +12,7 @@ export class TonService {
     }
 
     this.tonConnectUI = new TonConnectUI({
-      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json',
+      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/tonconnect-manifest.json',
       network: 'testnet'
     });
     console.log('TonConnectUI inicializado');
@@ -75,6 +75,16 @@ export class TonService {
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
+  }
+
+  // Obtém o endereço atual da carteira
+  async getCurrentWalletAddress() {
+    console.log('Obtendo endereço atual da carteira');
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda inicialização
+    if (this.tonConnectUI.connected) {
+      return this.tonConnectUI.account?.address || 'Desconhecido';
+    }
+    return null;
   }
 
   // Conecta a carteira
