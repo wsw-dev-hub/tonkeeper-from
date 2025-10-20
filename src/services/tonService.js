@@ -8,24 +8,47 @@ export class TonService {
     });
   }
 
-  // Verifica conexão com a carteira de forma assíncrona
-  async checkConnection() {
-    return new Promise((resolve, reject) => {
-      this.tonConnectUI.onStatusChange(
-        (walletInfo) => {
-          if (walletInfo) {
-            resolve({
-              connected: true,
-              address: walletInfo.account?.address || 'Desconhecido'
-            });
-          } else {
-            reject(new Error('Nenhuma carteira conectada'));
-          }
-        },
-        (error) => reject(error)
-      );
-      setTimeout(() => reject(new Error('Timeout na verificação da conexão')), 5000);
-    });
+  // Verifica conexão com retries
+  async checkConnection(maxRetries = 3, retryDelay = 2000) {
+    let attempts = 0;
+
+    while (attempts < maxRetries) {
+      try {
+        return await new Promise((resolve, reject) => {
+          // Escuta mudanças no estado da conexão
+          const unsubscribe = this.tonConnectUI.onStatusChange(
+            (walletInfo) => {
+              if (walletInfo) {
+                resolve({
+                  connected: true,
+                  address: walletInfo.account?.address || 'Desconhecido'
+                });
+                unsubscribe(); // Remove listener após sucesso
+              } else {
+                reject(new Error('Nenhuma carteira conectada'));
+              }
+            },
+            (error) => {
+              reject(error);
+              unsubscribe();
+            }
+          );
+
+          // Timeout de 10 segundos por tentativa
+          setTimeout(() => {
+            reject(new Error('Timeout na verificação da conexão'));
+            unsubscribe();
+          }, 10000);
+        });
+      } catch (error) {
+        attempts++;
+        if (attempts >= maxRetries) {
+          throw new Error(`Falha após ${maxRetries} tentativas: ${error.message}`);
+        }
+        console.warn(`Tentativa ${attempts} falhou: ${error.message}. Tentando novamente em ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
   }
 
   // Conecta a carteira
