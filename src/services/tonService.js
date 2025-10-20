@@ -12,77 +12,39 @@ export class TonService {
     }
 
     this.tonConnectUI = new TonConnectUI({
-      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/tonconnect-manifest.json',
+      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json',
       network: 'testnet'
     });
     console.log('TonConnectUI inicializado');
   }
 
-  // Verifica conexão com retries e fallback
-  async checkConnection(maxRetries = 3, retryDelay = 2000) {
-    let attempts = 0;
-
-    // Fallback: Verifica tonConnectUI.connected diretamente
+  // Verifica conexão com delay para garantir inicialização
+  async checkConnection() {
+    console.log('Verificando conexão com a carteira');
+    // Aguarda inicialização do SDK
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     if (this.tonConnectUI.connected) {
-      console.log('Conexão detectada diretamente via tonConnectUI.connected');
+      console.log('Conexão confirmada:', this.tonConnectUI.account?.address);
       return {
         connected: true,
         address: this.tonConnectUI.account?.address || 'Desconhecido'
       };
     }
-
-    while (attempts < maxRetries) {
-      try {
-        console.log(`Tentativa ${attempts + 1} de verificação de conexão`);
-        return await new Promise((resolve, reject) => {
-          const unsubscribe = this.tonConnectUI.onStatusChange(
-            (walletInfo) => {
-              console.log('onStatusChange disparado:', walletInfo);
-              if (walletInfo) {
-                resolve({
-                  connected: true,
-                  address: walletInfo.account?.address || 'Desconhecido'
-                });
-                unsubscribe();
-              } else {
-                reject(new Error('Nenhuma carteira conectada'));
-              }
-            },
-            (error) => {
-              console.error('Erro em onStatusChange:', error);
-              reject(error);
-              unsubscribe();
-            }
-          );
-
-          // Timeout de 15 segundos por tentativa
-          setTimeout(() => {
-            reject(new Error('Timeout na verificação da conexão'));
-            unsubscribe();
-          }, 15000);
-        });
-      } catch (error) {
-        attempts++;
-        console.warn(`Tentativa ${attempts} falhou: ${error.message}`);
-        if (attempts >= maxRetries) {
-          throw new Error(`Falha após ${maxRetries} tentativas: ${error.message}`);
-        }
-        console.log(`Aguardando ${retryDelay}ms antes da próxima tentativa`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-      }
-    }
+    throw new Error('Nenhuma carteira conectada');
   }
 
   // Conecta a carteira
   async connectWallet() {
     console.log('Iniciando conexão com a carteira');
-    if (this.tonConnectUI.connected) {
-      console.log('Carteira já conectada:', this.tonConnectUI.account?.address);
+    try {
+      await this.tonConnectUI.connectWallet();
+      console.log('Carteira conectada:', this.tonConnectUI.account?.address);
       return this.tonConnectUI.account?.address || 'Desconhecido';
+    } catch (error) {
+      console.error('Erro ao conectar a carteira:', error);
+      throw new Error('Falha ao conectar a carteira');
     }
-    await this.tonConnectUI.connectWallet();
-    console.log('Carteira conectada:', this.tonConnectUI.account?.address);
-    return this.tonConnectUI.account?.address || 'Desconhecido';
   }
 
   // Valida endereço TON

@@ -7,25 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   connectBtn.addEventListener('click', async () => {
     try {
+      status.textContent = 'Status: Solicitando conexão com a carteira...';
+      console.log('Solicitando conexão com a carteira');
+      const walletAddress = await tonService.connectWallet();
+      
       status.textContent = 'Status: Verificando conexão...';
-      console.log('Chamando checkConnection');
+      console.log('Verificando estado da conexão');
       const { connected, address } = await tonService.checkConnection();
+      
       if (connected) {
-        status.textContent = `Status: Carteira já conectada (${address}). Redirecionando...`;
+        status.textContent = `Status: Carteira conectada (${address}). Redirecionando...`;
         console.log('Conexão confirmada, redirecionando para transfer.html');
         window.location.href = 'transfer.html';
-        return;
+      } else {
+        throw new Error('Falha ao verificar a conexão após confirmação');
       }
-
-      status.textContent = 'Status: Conectando à carteira...';
-      console.log('Chamando connectWallet');
-      const walletAddress = await tonService.connectWallet();
-      status.textContent = `Status: Carteira conectada (${walletAddress}). Redirecionando...`;
-      console.log('Carteira conectada, redirecionando para transfer.html');
-      window.location.href = 'transfer.html';
     } catch (error) {
       console.error('Erro ao conectar:', error);
-      status.textContent = `Status: Erro - Falha na conexão. Verifique se a extensão Tonkeeper está ativa e na testnet.`;
+      status.textContent = `Status: Erro - ${error.message || 'Falha na conexão. Verifique se a extensão Tonkeeper está ativa e na testnet.'}`;
     }
   });
 });
