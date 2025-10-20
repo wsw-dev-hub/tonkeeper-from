@@ -6,9 +6,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const status = document.getElementById('status');
   const backBtn = document.getElementById('backBtn');
 
-  // Obter endereço autenticado do localStorage
-  const authenticatedWallet = localStorage.getItem('authenticatedWallet');
-  console.log('Endereço autenticado do localStorage:', authenticatedWallet);
+  // Obter endereço autenticado do sessionStorage
+  const authenticatedWallet = sessionStorage.getItem('authenticatedWallet');
+  console.log('Endereço autenticado do sessionStorage:', authenticatedWallet);
 
   // Aguardar autenticação da carteira
   try {
@@ -17,9 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { connected, address } = await tonService.checkConnection();
     
     if (!connected || (authenticatedWallet && address !== authenticatedWallet)) {
-      status.textContent = `Status: ${!connected ? 'Nenhuma carteira conectada' : 'Carteira diferente da autenticada'}. Redirecionando para login em 3 segundos...`;
-      console.log('Conexão inválida, redirecionando para index.html');
-      setTimeout(() => window.location.href = 'index.html', 3000);
+      status.textContent = `Status: ${!connected ? 'Nenhuma carteira conectada' : 'Carteira diferente da autenticada'}. Conecte a carteira correta para continuar.`;
+      console.log('Conexão inválida, mantendo usuário na página');
       return;
     }
     
@@ -27,8 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Conexão confirmada:', address);
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
-    status.textContent = 'Status: Erro ao verificar conexão. Redirecionando para login em 3 segundos...';
-    setTimeout(() => window.location.href = 'index.html', 3000);
+    status.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
     return;
   }
 
@@ -53,9 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Verificar se a carteira atual é a autenticada antes da transação
     const currentWallet = await tonService.getCurrentWalletAddress();
     if (authenticatedWallet && currentWallet !== authenticatedWallet) {
-      status.textContent = 'Status: Carteira atual não corresponde à autenticada. Redirecionando para login em 3 segundos...';
+      status.textContent = 'Status: Carteira atual não corresponde à autenticada. Conecte a carteira correta.';
       console.log('Carteira atual não corresponde:', { currentWallet, authenticatedWallet });
-      setTimeout(() => window.location.href = 'index.html', 3000);
       return;
     }
 
@@ -81,13 +78,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Transação concluída:', result);
     } catch (error) {
       console.error('Erro na transação:', error);
-      status.textContent = `Status: Erro - ${error.message || 'Falha na transação'}`;
+      status.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
     }
   });
 
   // Botão de voltar
-  backBtn.addEventListener('click', () => {
-    console.log('Botão de voltar clicado, redirecionando para index.html');
+  backBtn.addEventListener('click', async () => {
+    console.log('Botão de voltar clicado, desconectando carteira e limpando sessionStorage');
+    try {
+      await tonService.disconnectWallet();
+      sessionStorage.removeItem('authenticatedWallet');
+      console.log('sessionStorage limpo e carteira desconectada');
+    } catch (error) {
+      console.error('Erro ao desconectar carteira:', error);
+    }
     window.location.href = 'index.html';
   });
 });

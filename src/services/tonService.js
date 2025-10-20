@@ -2,17 +2,17 @@ import { TonConnectUI } from '@tonconnect/ui';
 
 export class TonService {
   constructor() {
-    // Limpar localStorage para evitar sessões corrompidas (exceto authenticatedWallet)
+    // Limpar sessionStorage relacionado ao TON Connect, exceto authenticatedWallet
     try {
-      localStorage.removeItem('ton-connect-storage_bridge-connection');
-      localStorage.removeItem('ton-connect-storage_protocol-version');
-      console.log('LocalStorage limpo para TON Connect');
+      sessionStorage.removeItem('ton-connect-storage_bridge-connection');
+      sessionStorage.removeItem('ton-connect-storage_protocol-version');
+      console.log('sessionStorage limpo para TON Connect');
     } catch (error) {
-      console.warn('Erro ao limpar localStorage:', error);
+      console.warn('Erro ao limpar sessionStorage:', error);
     }
 
     this.tonConnectUI = new TonConnectUI({
-      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/tonconnect-manifest.json',
+      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json',
       network: 'testnet'
     });
     console.log('TonConnectUI inicializado');
@@ -100,6 +100,18 @@ export class TonService {
     }
   }
 
+  // Desconecta a carteira
+  async disconnectWallet() {
+    console.log('Desconectando carteira');
+    try {
+      await this.tonConnectUI.disconnect();
+      console.log('Carteira desconectada');
+    } catch (error) {
+      console.error('Erro ao desconectar carteira:', error);
+      throw new Error('Falha ao desconectar a carteira');
+    }
+  }
+
   // Valida endereço TON
   validateAddress(address) {
     console.log('Validando endereço:', address);
@@ -130,7 +142,7 @@ export class TonService {
       hash: result.boc,
       address,
       amount,
-      network: 'Testnet'
+      network: 'testnet'
     };
   }
 }
