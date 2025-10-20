@@ -19,11 +19,11 @@ export class TonService {
   }
 
   // Verifica conexão com retries
-  async checkConnection(maxRetries = 3, retryDelay = 2000, timeoutPerAttempt = 10000) {
+  async checkConnection(maxRetries = 4, retryDelay = 2000, timeoutPerAttempt = 12000) {
     console.log('Iniciando verificação de conexão com a carteira');
     
     // Aguarda inicialização do SDK
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {

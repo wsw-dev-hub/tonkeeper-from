@@ -13,9 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { connected, address } = await tonService.checkConnection();
     
     if (!connected) {
-      status.textContent = 'Status: Nenhuma carteira conectada. Redirecionando para login...';
+      status.textContent = 'Status: Nenhuma carteira conectada. Redirecionando para login em 3 segundos...';
       console.log('Conexão não detectada, redirecionando para index.html');
-      setTimeout(() => window.location.href = 'index.html', 2000); // Delay para mostrar mensagem
+      setTimeout(() => window.location.href = 'index.html', 3000); // Aumentado para 3s
       return;
     }
     
@@ -23,12 +23,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Conexão confirmada:', address);
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
-    status.textContent = 'Status: Erro ao verificar conexão. Redirecionando para login...';
-    setTimeout(() => window.location.href = 'index.html', 2000); // Delay para mostrar mensagem
+    status.textContent = 'Status: Erro ao verificar conexão. Redirecionando para login em 3 segundos...';
+    setTimeout(() => window.location.href = 'index.html', 3000); // Aumentado para 3s
     return;
   }
 
-  // Lógica de transferência
+  // Lógica de transferência com confirmação do usuário
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const address = document.getElementById('address').value;
@@ -46,8 +46,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Solicitar confirmação do usuário
+    const confirmTransaction = window.confirm(
+      `Você deseja enviar ${amount} TON para o endereço ${address} na testnet?`
+    );
+    if (!confirmTransaction) {
+      status.textContent = 'Status: Transação cancelada pelo usuário.';
+      console.log('Transação cancelada pelo usuário');
+      return;
+    }
+
     try {
-      status.textContent = 'Status: Enviando transação...';
+      status.textContent = 'Status: Aguardando confirmação da carteira...';
       console.log('Enviando transação:', { address, amount });
       const result = await tonService.sendTransaction(address, amount);
       status.textContent = `Transação concluída com sucesso!
