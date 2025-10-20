@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transferência de TON</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../styles/styles.css">
 </head>
 <body>
   <div class="container">
     <h1>Transferir TON</h1>
     <form id="transferForm">
       <label for="address">Endereço do Destinatário:</label>
-      <input type="text" id="address" placeholder="Ex.: EQ...">
+      <input type="text" id="address" placeholder="Ex.: EQ... ou 0Q...">
       <label for="amount">Quantidade de TON:</label>
       <input type="number" id="amount" placeholder="Ex.: 0.1" step="0.01" min="0">
       <button type="submit" id="transferBtn">Enviar Transação</button>
@@ -19,6 +19,6 @@
     <p id="status">Status: Aguardando transferência...</p>
     <button id="backBtn">Voltar ao Login</button>
   </div>
-  <script type="module" src="transfer.js"></script>
+  <script type="module" src="../controllers/transferController.js"></script>
 </body>
 </html>
