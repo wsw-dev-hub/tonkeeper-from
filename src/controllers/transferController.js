@@ -1,4 +1,4 @@
-import { TonService } from '../services/tonService.js';
+import { TonService } from './services/tonService.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const tonService = new TonService();
