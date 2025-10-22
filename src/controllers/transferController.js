@@ -7,17 +7,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   const balanceElement = document.getElementById('balance');
   const backBtn = document.getElementById('backBtn');
 
-  // Função para atualizar o saldo
-  const updateBalance = async () => {
-    try {
-      const balance = await tonService.getBalance();
-      balanceElement.textContent = `Saldo: ${balance} TON`;
-      console.log('Saldo atualizado:', balance);
-    } catch (error) {
-      console.error('Erro ao atualizar saldo:', error);
-      balanceElement.textContent = `Saldo: Erro ao carregar`;
-      status.textContent = `Status: Erro ao obter saldo - ${error.message || 'Tente novamente.'}`;
+  // Função para atualizar o saldo com retries
+  const updateBalance = async (retries = 3, retryDelay = 2000) => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`Tentativa ${attempt} de atualizar saldo`);
+        const balance = await tonService.getBalance();
+        balanceElement.textContent = `Saldo: ${balance} TON`;
+        console.log('Saldo atualizado:', balance);
+        return true;
+      } catch (error) {
+        console.error(`Tentativa ${attempt} de obter saldo falhou:`, error);
+        if (attempt === retries) {
+          balanceElement.textContent = `Saldo: Erro ao carregar`;
+          status.textContent = `Status: Erro ao obter saldo - ${error.message || 'Tente novamente.'}`;
+          return false;
+        }
+        console.log(`Aguardando ${retryDelay}ms antes da próxima tentativa`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
     }
+    return false;
   };
 
   // Função para encerrar a sessão
@@ -57,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
     status.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
-    balanceElement.textContent = 'Saldo: Erro ao carregar';
+    balanceElement.text = 'Saldo: Erro ao carregar';
     return;
   }
 
@@ -101,13 +111,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       status.textContent = 'Status: Aguardando confirmação da carteira...';
       console.log('Enviando transação:', { address, amount, wallet: currentWallet });
       const result = await tonService.sendTransaction(address, amount);
-      status.textContent = `Transação concluída com sucesso!
-        - Hash: ${result.hash}
-        - Endereço de destino: ${result.address}
-        - Valor: ${result.amount} TON
-        - Rede: ${result.network}`;
-      console.log('Transação concluída:', result);
-      await updateBalance(); // Atualizar saldo após transação
+      status.textContent = 'Status: Transação enviada. Aguardando 10 segundos para confirmação na blockchain...';
+      console.log('Transação enviada, aguardando 10 segundos para atualizar saldo');
+
+      // Aguardar 10 segundos antes de atualizar o saldo
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      
+      // Atualizar saldo com retries
+      const updated = await updateBalance();
+      if (updated) {
+        status.textContent = `Transação concluída com sucesso!
+          - Hash: ${result.hash}
+          - Endereço de destino: ${result.address}
+          - Valor: ${result.amount} TON
+          - Rede: ${result.network}`;
+        console.log('Transação concluída e saldo atualizado:', result);
+      } else {
+        status.textContent = `Transação enviada, mas falha ao atualizar saldo:
+          - Hash: ${result.hash}
+          - Endereço de destino: ${result.address}
+          - Valor: ${result.amount} TON
+          - Rede: ${result.network}`;
+        console.log('Transação concluída, mas saldo não atualizado:', result);
+      }
     } catch (error) {
       console.error('Erro na transação:', error);
       status.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
