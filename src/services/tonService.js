@@ -22,7 +22,7 @@ export class TonService {
     }
   }
 
-  // Verifica conexão com retries (usado para verificação de cache)
+  // Verifica conexão com retries
   async checkConnection(maxRetries = 3, retryDelay = 4000, timeoutPerAttempt = 9000) {
     console.log('Iniciando verificação de conexão com a carteira');
     await new Promise(resolve => setTimeout(resolve, 6000));
@@ -53,8 +53,10 @@ export class TonService {
     console.log('Obtendo endereço atual da carteira');
     await new Promise(resolve => setTimeout(resolve, 1000));
     if (this.tonConnectUI.connected && this.tonConnectUI.account) {
+      console.log('Endereço retornado:', this.tonConnectUI.account?.address);
       return this.tonConnectUI.account?.address || 'Desconhecido';
     }
+    console.warn('Nenhuma carteira conectada');
     return null;
   }
 
@@ -66,11 +68,18 @@ export class TonService {
         throw new Error('Nenhuma carteira conectada');
       }
       const address = this.tonConnectUI.account.address;
-      const response = await fetch(`https://testnet.tonapi.io/v2/accounts/${address}`);
+      console.log('Consultando saldo para endereço:', address);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const response = await fetch(`https://testnet.tonapi.io/v2/accounts/${address}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       if (!response.ok) {
-        throw new Error(`Falha ao obter saldo: ${response.statusText}`);
+        throw new Error(`Falha ao obter saldo: ${response.statusText} (Status: ${response.status})`);
       }
       const data = await response.json();
+      console.log('Resposta da API:', data);
       const balanceNanoTON = data.balance;
       const balanceTON = balanceNanoTON / 1e9; // Converter de nanoTON para TON
       console.log('Saldo obtido:', balanceTON, 'TON');
@@ -152,7 +161,7 @@ export class TonService {
       messages: [
         {
           address,
-          amount: (parseFloat(amount) * 1e9).toString()
+          amount: (parseFloat(amount) * 1e9).toString() // Converter TON para nanoTON
         }
       ]
     };
@@ -161,7 +170,7 @@ export class TonService {
     return {
       hash: result.boc,
       address,
-      amount,
+      amount: parseFloat(amount).toFixed(4), // Retornar valor em TON
       network: 'Testnet'
     };
   }
