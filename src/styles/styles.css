@@ -68,8 +68,12 @@ button:hover {
 
 p#status {
   white-space: pre-wrap;
+  overflow-wrap: break-word; /* Quebra palavras longas */
+  max-width: 100%; /* Respeita os limites do contêiner */
   margin-top: 1rem;
   font-size: 0.9rem;
+  line-height: 1.4;
+  word-break: break-all; /* Garante que hashes longos sejam quebrados */
 }
 
 /* Media Queries para responsividade */
@@ -87,8 +91,13 @@ p#status {
     font-size: 1.25rem;
   }
 
-  label, input, button, p#status {
+  label, input, button {
     font-size: 0.85rem;
+  }
+
+  p#status {
+    font-size: 0.8rem;
+    line-height: 1.3;
   }
 
   button {
@@ -105,8 +114,13 @@ p#status {
     font-size: 1rem;
   }
 
-  label, input, button, p#status {
+  label, input, button {
     font-size: 0.8rem;
+  }
+
+  p#status {
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
 
   .container {
