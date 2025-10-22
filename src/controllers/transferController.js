@@ -63,22 +63,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Conexão inválida, mantendo usuário na página');
       balanceElement.textContent = 'Saldo: N/A';
       hashElement.textContent = 'Hash: -';
-      addressElement.textContent = `Endereço da Carteira: ${address || '-'}`;
+      addressElement.textContent = `Endereço da Carteira: ${address || authenticatedWallet || '-'}`;
       amountElement.textContent = 'Valor: -';
       networkElement.textContent = 'Rede: -';
       return;
     }
     
     operationMessage.textContent = `Status: Conectado como ${address}`;
-    addressElement.textContent = `Endereço da Carteira: ${address}`; // Exibir endereço da carteira
-    console.log('Conexão confirmada:', address);
+    addressElement.textContent = `Endereço da Carteira: ${address}`; // Exibir endereço na inicialização
+    console.log('Conexão confirmada, endereço exibido:', address);
     await updateBalance(); // Carregar saldo inicial
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
     operationMessage.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
     balanceElement.textContent = 'Saldo: Erro ao carregar';
     hashElement.textContent = 'Hash: -';
-    addressElement.textContent = `Endereço da Carteira: ${authenticatedWallet || '-'}`;
+    addressElement.textContent = `Endereço da Carteira: ${authenticatedWallet || '-'}`; // Tentar exibir endereço do sessionStorage
     amountElement.textContent = 'Valor: -';
     networkElement.textContent = 'Rede: -';
     return;
@@ -87,32 +87,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Lógica de transferência com confirmação do usuário
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const address = document.getElementById('address').value;
-    const amount = document.getElementById('amount').value;
+    const recipientAddress = document.getElementById('address').value.trim();
+    const amountInput = document.getElementById('amount').value.trim();
+    console.log('Dados do formulário:', { recipientAddress, amountInput });
 
-    if (!address || !amount || amount <= 0) {
+    if (!recipientAddress || !amountInput || parseFloat(amountInput) <= 0) {
       operationMessage.textContent = 'Status: Insira um endereço e valor válidos.';
-      console.log('Validação de entrada falhou:', { address, amount });
+      console.log('Validação de entrada falhou:', { recipientAddress, amountInput });
       return;
     }
 
-    if (!tonService.validateAddress(address)) {
+    const amount = parseFloat(amountInput);
+    if (isNaN(amount)) {
+      operationMessage.textContent = 'Status: Valor inválido. Insira um número válido.';
+      console.log('Valor inválido:', amountInput);
+      return;
+    }
+
+    if (!tonService.validateAddress(recipientAddress)) {
       operationMessage.textContent = 'Status: Endereço inválido. Deve ter 48 caracteres, começar com EQ, UQ, 0Q ou kQ, e conter apenas caracteres base64.';
-      console.log('Endereço inválido:', address);
+      console.log('Endereço inválido:', recipientAddress);
       return;
     }
 
     // Verificar se a carteira atual é a autenticada
     const currentWallet = await tonService.getCurrentWalletAddress();
+    console.log('Carteira atual:', currentWallet, 'Autenticada:', authenticatedWallet);
     if (authenticatedWallet && currentWallet !== authenticatedWallet) {
       operationMessage.textContent = 'Status: Carteira atual não corresponde à autenticada. Conecte a carteira correta.';
       console.log('Carteira atual não corresponde:', { currentWallet, authenticatedWallet });
+      addressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || '-'}`;
       return;
     }
 
     // Solicitar confirmação do usuário
     /*const confirmTransaction = window.confirm(
-      `Você deseja enviar ${amount} TON para o endereço ${address} usando a carteira ${currentWallet} na testnet?`
+      `Você deseja enviar ${amount} TON para o endereço ${recipientAddress} usando a carteira ${currentWallet} na testnet?`
     );
     if (!confirmTransaction) {
       operationMessage.textContent = 'Status: Transação cancelada pelo usuário.';
@@ -122,8 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       operationMessage.textContent = 'Status: Aguardando confirmação da carteira...';
-      console.log('Enviando transação:', { address, amount, wallet: currentWallet });
-      const result = await tonService.sendTransaction(address, amount);
+      console.log('Enviando transação:', { recipientAddress, amount, wallet: currentWallet });
+      const result = await tonService.sendTransaction(recipientAddress, amount);
       operationMessage.textContent = 'Status: Transação enviada. Aguardando 10 segundos para confirmação na blockchain...';
       console.log('Transação enviada:', result);
 
@@ -136,14 +146,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         operationMessage.textContent = 'Status: Transação concluída com sucesso!';
         hashElement.textContent = `Hash: ${result.hash}`;
         addressElement.textContent = `Endereço da Carteira: ${currentWallet}`; // Atualizar endereço da carteira
-        amountElement.textContent = `Valor: ${parseFloat(amount).toFixed(4)} TON`; // Usar valor do input
+        amountElement.textContent = `Valor: ${amount.toFixed(4)} TON`; // Usar valor formatado
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída e saldo atualizado:', result);
       } else {
         operationMessage.textContent = 'Status: Transação enviada, mas falha ao atualizar saldo.';
         hashElement.textContent = `Hash: ${result.hash}`;
-        addressElement.textContent = `Endereço da Carteira: ${currentWallet}`;
-        amountElement.textContent = `Valor: ${parseFloat(amount).toFixed(4)} TON`;
+        addressElement.textContent = `Endereço da Carteira: ${currentWallet}`; // Atualizar endereço da carteira
+        amountElement.textContent = `Valor: ${amount.toFixed(4)} TON`; // Usar valor formatado
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída, mas saldo não atualizado:', result);
       }
@@ -151,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.error('Erro na transação:', error);
       operationMessage.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
       hashElement.textContent = 'Hash: -';
-      addressElement.textContent = `Endereço da Carteira: ${currentWallet || '-'}`;
+      addressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || '-'}`;
       amountElement.textContent = 'Valor: -';
       networkElement.textContent = 'Rede: -';
     }

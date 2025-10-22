@@ -30,10 +30,10 @@ export class TonService {
       try {
         console.log(`Tentativa ${attempt} de verificação de conexão`);
         if (this.tonConnectUI.account && this.tonConnectUI.connected) {
-          console.log('Conexão detectada:', this.tonConnectUI.account?.address);
+          console.log('Conexão detectada:', this.tonConnectUI.account.address);
           return {
             connected: true,
-            address: this.tonConnectUI.account?.address || 'Desconhecido'
+            address: this.tonConnectUI.account.address || 'Desconhecido'
           };
         }
         throw new Error('Nenhuma carteira conectada');
@@ -51,13 +51,17 @@ export class TonService {
   // Obtém o endereço atual da carteira
   async getCurrentWalletAddress() {
     console.log('Obtendo endereço atual da carteira');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    if (this.tonConnectUI.connected && this.tonConnectUI.account) {
-      console.log('Endereço retornado:', this.tonConnectUI.account?.address);
-      return this.tonConnectUI.account?.address || 'Desconhecido';
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Pequeno atraso para garantir conexão
+      if (this.tonConnectUI.connected && this.tonConnectUI.account) {
+        console.log('Endereço retornado:', this.tonConnectUI.account.address);
+        return this.tonConnectUI.account.address || 'Desconhecido';
+      }
+      throw new Error('Nenhuma carteira conectada');
+    } catch (error) {
+      console.error('Erro ao obter endereço da carteira:', error);
+      return null; // Retornar null em caso de erro
     }
-    console.warn('Nenhuma carteira conectada');
-    return null;
   }
 
   // Obtém o saldo da carteira
@@ -81,9 +85,9 @@ export class TonService {
       const data = await response.json();
       console.log('Resposta da API:', data);
       const balanceNanoTON = data.balance;
-      const balanceTON = balanceNanoTON / 1e9; // Converter de nanoTON para TON
+      const balanceTON = balanceNanoTON / 1e9;
       console.log('Saldo obtido:', balanceTON, 'TON');
-      return balanceTON.toFixed(4); // Retorna com 4 casas decimais
+      return balanceTON.toFixed(4);
     } catch (error) {
       console.error('Erro ao obter saldo:', error);
       throw new Error(`Falha ao obter saldo: ${error.message}`);
@@ -103,8 +107,8 @@ export class TonService {
       if (!this.tonConnectUI.connected || !this.tonConnectUI.account) {
         throw new Error('Falha ao detectar carteira após conexão');
       }
-      console.log('Carteira conectada:', this.tonConnectUI.account?.address);
-      return this.tonConnectUI.account?.address || 'Desconhecido';
+      console.log('Carteira conectada:', this.tonConnectUI.account.address);
+      return this.tonConnectUI.account.address || 'Desconhecido';
     } catch (error) {
       console.error('Erro ao conectar a carteira:', error);
       throw error;
@@ -156,22 +160,28 @@ export class TonService {
   // Envia transação
   async sendTransaction(address, amount) {
     console.log('Enviando transação para:', address, 'Valor:', amount);
-    const transaction = {
-      validUntil: Math.floor(Date.now() / 1000) + 300,
-      messages: [
-        {
-          address,
-          amount: (parseFloat(amount) * 1e9).toString() // Converter TON para nanoTON
-        }
-      ]
-    };
-    const result = await this.tonConnectUI.sendTransaction(transaction);
-    console.log('Transação enviada:', result);
-    return {
-      hash: result.boc,
-      address,
-      amount: parseFloat(amount).toFixed(4), // Retornar valor em TON
-      network: 'Testnet'
-    };
+    try {
+      const transaction = {
+        validUntil: Math.floor(Date.now() / 1000) + 300,
+        messages: [
+          {
+            address,
+            amount: (parseFloat(amount) * 1e9).toString() // Converter TON para nanoTON
+          }
+        ]
+      };
+      console.log('Transação preparada:', transaction);
+      const result = await this.tonConnectUI.sendTransaction(transaction);
+      console.log('Resultado bruto da transação:', result);
+      return {
+        hash: result.boc,
+        address,
+        amount: parseFloat(amount).toFixed(4),
+        network: 'Testnet'
+      };
+    } catch (error) {
+      console.error('Erro ao enviar transação:', error);
+      throw error;
+    }
   }
 }
