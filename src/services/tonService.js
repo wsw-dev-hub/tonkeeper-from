@@ -48,19 +48,26 @@ export class TonService {
     }
   }
 
-  // Obtém o endereço atual da carteira
-  async getCurrentWalletAddress() {
+  // Obtém o endereço atual da carteira com retries
+  async getCurrentWalletAddress(maxRetries = 3, retryDelay = 1000) {
     console.log('Obtendo endereço atual da carteira');
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Pequeno atraso para garantir conexão
-      if (this.tonConnectUI.connected && this.tonConnectUI.account) {
-        console.log('Endereço retornado:', this.tonConnectUI.account.address);
-        return this.tonConnectUI.account.address || 'Desconhecido';
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        if (this.tonConnectUI.connected && this.tonConnectUI.account) {
+          console.log('Endereço retornado:', this.tonConnectUI.account.address);
+          return this.tonConnectUI.account.address || 'Desconhecido';
+        }
+        throw new Error('Nenhuma carteira conectada');
+      } catch (error) {
+        console.warn(`Tentativa ${attempt} de obter endereço falhou: ${error.message}`);
+        if (attempt === maxRetries) {
+          console.error('Erro ao obter endereço da carteira após retries:', error);
+          return null;
+        }
+        console.log(`Aguardando ${retryDelay}ms antes da próxima tentativa`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
-      throw new Error('Nenhuma carteira conectada');
-    } catch (error) {
-      console.error('Erro ao obter endereço da carteira:', error);
-      return null; // Retornar null em caso de erro
     }
   }
 
@@ -91,6 +98,28 @@ export class TonService {
     } catch (error) {
       console.error('Erro ao obter saldo:', error);
       throw new Error(`Falha ao obter saldo: ${error.message}`);
+    }
+  }
+
+  // Obtém taxas da transação (tentativa via API)
+  async getTransactionFees(transactionHash, walletAddress) {
+    console.log('Obtendo taxas para transação:', transactionHash);
+    try {
+      const response = await fetch(`https://testnet.tonapi.io/v2/blockchain/transactions/${transactionHash}`, {
+        signal: new AbortController().signal
+      });
+      if (!response.ok) {
+        throw new Error(`Falha ao obter detalhes da transação: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('Detalhes da transação:', data);
+      const feesNanoTON = data.total_fees || 10000000; // Fallback: 0.01 TON em nanoTON
+      const feesTON = feesNanoTON / 1e9;
+      console.log('Taxas obtidas:', feesTON, 'TON');
+      return feesTON;
+    } catch (error) {
+      console.warn('Erro ao obter taxas, usando estimativa de 0.01 TON:', error);
+      return 0.01; // Estimativa de 0.01 TON
     }
   }
 

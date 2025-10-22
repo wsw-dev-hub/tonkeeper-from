@@ -68,7 +68,7 @@ button:hover {
 
 #status {
   margin-top: 1rem;
-  text-align: left; /* Alinhar à esquerda para melhor legibilidade */
+  text-align: left;
 }
 
 #operation-message {
@@ -87,7 +87,7 @@ button:hover {
   font-size: 0.85rem;
   line-height: 1.4;
   margin: 0.2rem 0;
-  word-break: break-all; /* Quebra hashes e endereços longos */
+  word-break: break-all;
 }
 
 /* Media Queries para responsividade */
