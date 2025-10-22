@@ -4,7 +4,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tonService = new TonService();
   const form = document.getElementById('transferForm');
   const status = document.getElementById('status');
+  const balanceElement = document.getElementById('balance');
   const backBtn = document.getElementById('backBtn');
+
+  // Função para atualizar o saldo
+  const updateBalance = async () => {
+    try {
+      const balance = await tonService.getBalance();
+      balanceElement.textContent = `Saldo: ${balance} TON`;
+      console.log('Saldo atualizado:', balance);
+    } catch (error) {
+      console.error('Erro ao atualizar saldo:', error);
+      balanceElement.textContent = `Saldo: Erro ao carregar`;
+      status.textContent = `Status: Erro ao obter saldo - ${error.message || 'Tente novamente.'}`;
+    }
+  };
 
   // Função para encerrar a sessão
   const endSession = async () => {
@@ -16,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('Erro ao encerrar sessão:', error);
       status.textContent = `Status: Erro ao encerrar sessão - ${error.message || 'Tente novamente.'}`;
-      throw error; // Propagar erro para evitar redirecionamento
+      throw error;
     }
   };
 
@@ -24,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const authenticatedWallet = sessionStorage.getItem('authenticatedWallet');
   console.log('Endereço autenticado do sessionStorage:', authenticatedWallet);
 
-  // Aguardar autenticação da carteira
+  // Aguardar autenticação da carteira e carregar saldo
   try {
     status.textContent = 'Status: Verificando conexão com a carteira...';
     console.log('Iniciando verificação de conexão em transfer.html');
@@ -33,14 +47,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!connected || (authenticatedWallet && address !== authenticatedWallet)) {
       status.textContent = `Status: ${!connected ? 'Nenhuma carteira conectada' : 'Carteira diferente da autenticada'}. Conecte a carteira correta para continuar.`;
       console.log('Conexão inválida, mantendo usuário na página');
+      balanceElement.textContent = 'Saldo: N/A';
       return;
     }
     
     status.textContent = `Status: Conectado como ${address}`;
     console.log('Conexão confirmada:', address);
+    await updateBalance(); // Carregar saldo inicial
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
     status.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
+    balanceElement.textContent = 'Saldo: Erro ao carregar';
     return;
   }
 
@@ -62,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    // Verificar se a carteira atual é a autenticada antes da transação
+    // Verificar se a carteira atual é a autenticada
     const currentWallet = await tonService.getCurrentWalletAddress();
     if (authenticatedWallet && currentWallet !== authenticatedWallet) {
       status.textContent = 'Status: Carteira atual não corresponde à autenticada. Conecte a carteira correta.';
@@ -90,6 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         - Valor: ${result.amount} TON
         - Rede: ${result.network}`;
       console.log('Transação concluída:', result);
+      await updateBalance(); // Atualizar saldo após transação
     } catch (error) {
       console.error('Erro na transação:', error);
       status.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
@@ -104,7 +122,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Redirecionando para index.html após encerramento da sessão');
       window.location.href = 'index.html';
     } catch (error) {
-      // Não redireciona se a desconexão falhar
       console.log('Redirecionamento cancelado devido a erro na desconexão');
     }
   });
