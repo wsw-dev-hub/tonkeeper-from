@@ -14,10 +14,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   const backBtn = document.getElementById('backBtn');
 
   // Função para atualizar o saldo com retries
-  const updateBalance = async (retries = 5, retryDelay = 3000) => {
+  const updateBalance = async (retries = 7, retryDelay = 5000) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         console.log(`Tentativa ${attempt} de atualizar saldo`);
+        // Verificar conexão antes de obter saldo
+        const { connected } = await tonService.checkConnection();
+        if (!connected) {
+          throw new Error('Carteira desconectada durante atualização de saldo');
+        }
         const balance = await tonService.getBalance();
         balanceElement.textContent = `Saldo: ${balance} TON`;
         console.log('Saldo atualizado:', balance);
@@ -25,7 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (error) {
         console.error(`Tentativa ${attempt} de obter saldo falhou:`, error);
         if (attempt === retries) {
-          balanceElement.textContent = `Saldo: Erro ao carregar`;
+          const previousBalance = balanceElement.textContent.includes('Saldo:') ? balanceElement.textContent : 'Saldo: N/A';
+          balanceElement.textContent = `Saldo: Não atualizado (${previousBalance})`;
           operationMessage.textContent = `Status: Erro ao obter saldo - ${error.message || 'Tente novamente.'}`;
           return false;
         }
@@ -64,7 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       operationMessage.textContent = `Status: ${!connected ? 'Nenhuma carteira conectada' : 'Carteira diferente da autenticada'}. Conecte a carteira correta para continuar.`;
       console.log('Conexão inválida, mantendo usuário na página');
       balanceElement.textContent = 'Saldo: N/A';
-      senderAddressElement.textContent = `Endereço da Carteira: ${address || authenticatedWallet || '-'}`;
+      senderAddressElement.textContent = `Endereço da Carteira: ${address || authenticatedWallet || 'Desconhecido'}`;
       recipientAddressElement.textContent = 'Endereço de Recebimento: -';
       transferredAmountElement.textContent = 'Valor Transferido: -';
       networkFeeElement.textContent = 'Taxa de Rede: -';
@@ -74,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     operationMessage.textContent = `Status: Conectado como ${address}`;
-    senderAddressElement.textContent = `Endereço da Carteira: ${address}`; // Exibir endereço da carteira
+    senderAddressElement.textContent = `Endereço da Carteira: ${address}`; // Exibir endereço raw
     recipientAddressElement.textContent = 'Endereço de Recebimento: -';
     transferredAmountElement.textContent = 'Valor Transferido: -';
     networkFeeElement.textContent = 'Taxa de Rede: -';
@@ -84,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Erro na verificação da conexão:', error);
     operationMessage.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
     balanceElement.textContent = 'Saldo: Erro ao carregar';
-    senderAddressElement.textContent = `Endereço da Carteira: ${authenticatedWallet || '-'}`;
+    senderAddressElement.textContent = `Endereço da Carteira: ${authenticatedWallet || 'Desconhecido'}`;
     recipientAddressElement.textContent = 'Endereço de Recebimento: -';
     transferredAmountElement.textContent = 'Valor Transferido: -';
     networkFeeElement.textContent = 'Taxa de Rede: -';
@@ -130,7 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (authenticatedWallet && currentWallet !== authenticatedWallet) {
       operationMessage.textContent = 'Status: Carteira atual não corresponde à autenticada. Conecte a carteira correta.';
       console.log('Carteira atual não corresponde:', { currentWallet, authenticatedWallet });
-      senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || '-'}`;
+      senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || 'Desconhecido'}`;
       return;
     }
 
@@ -155,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       operationMessage.textContent = 'Status: Transação enviada. Aguardando 10 segundos para confirmação na blockchain...';
       console.log('Transação enviada:', result);
 
-      // Aguardar 10 segundos antes de atualizar o saldo
+      // Aguardar 15 segundos antes de atualizar o saldo
       await new Promise(resolve => setTimeout(resolve, 10000));
       
       // Tentar obter taxas reais
@@ -171,19 +177,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const updated = await updateBalance();
       if (updated) {
         operationMessage.textContent = 'Status: Transação concluída com sucesso!';
-        senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet}`;
+        senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || 'Desconhecido'}`;
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
         transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(4)} TON`;
-        networkFeeElement.textContent = `Taxa de Rede: ${fees.toFixed(4)} TON`;
+        networkFeeElement.textContent = `Taxa de Rede: ${fees} TON`;
         hashElement.textContent = `Hash: ${result.hash}`;
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída e saldo atualizado:', result, 'Taxas:', fees);
       } else {
         operationMessage.textContent = 'Status: Transação enviada, mas falha ao atualizar saldo.';
-        senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet}`;
+        senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || 'Desconhecido'}`;
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
         transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(4)} TON`;
-        networkFeeElement.textContent = `Taxa de Rede: ${fees.toFixed(4)} TON`;
+        networkFeeElement.textContent = `Taxa de Rede: ${fees} TON`;
         hashElement.textContent = `Hash: ${result.hash}`;
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída, mas saldo não atualizado:', result, 'Taxas:', fees);
@@ -191,7 +197,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
       console.error('Erro na transação:', error);
       operationMessage.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
-      senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || '-'}`;
+      senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || 'Desconhecido'}`;
       recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress || '-'}`;
       transferredAmountElement.textContent = `Valor Transferido: ${amount ? amount.toFixed(4) : '-'}`;
       networkFeeElement.textContent = 'Taxa de Rede: -';

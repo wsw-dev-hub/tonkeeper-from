@@ -33,7 +33,7 @@ export class TonService {
           console.log('Conexão detectada:', this.tonConnectUI.account.address);
           return {
             connected: true,
-            address: this.tonConnectUI.account.address || 'Desconhecido'
+            address: this.tonConnectUI.account.address // Retorna endereço raw
           };
         }
         throw new Error('Nenhuma carteira conectada');
@@ -56,14 +56,14 @@ export class TonService {
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.tonConnectUI.connected && this.tonConnectUI.account) {
           console.log('Endereço retornado:', this.tonConnectUI.account.address);
-          return this.tonConnectUI.account.address || 'Desconhecido';
+          return this.tonConnectUI.account.address; // Retorna endereço raw
         }
         throw new Error('Nenhuma carteira conectada');
       } catch (error) {
         console.warn(`Tentativa ${attempt} de obter endereço falhou: ${error.message}`);
         if (attempt === maxRetries) {
           console.error('Erro ao obter endereço da carteira após retries:', error);
-          return null;
+          return 'Desconhecido';
         }
         console.log(`Aguardando ${retryDelay}ms antes da próxima tentativa`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -81,7 +81,7 @@ export class TonService {
       const address = this.tonConnectUI.account.address;
       console.log('Consultando saldo para endereço:', address);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // Timeout aumentado
       const response = await fetch(`https://testnet.tonapi.io/v2/accounts/${address}`, {
         signal: controller.signal
       });
@@ -119,7 +119,7 @@ export class TonService {
       return feesTON.toFixed(4);
     } catch (error) {
       console.warn('Erro ao obter taxas, usando estimativa de 0.01 TON:', error);
-      return 0.01; // Estimativa de 0.01 TON
+      return (0.01).toFixed(4);
     }
   }
 
@@ -137,7 +137,7 @@ export class TonService {
         throw new Error('Falha ao detectar carteira após conexão');
       }
       console.log('Carteira conectada:', this.tonConnectUI.account.address);
-      return this.tonConnectUI.account.address || 'Desconhecido';
+      return this.tonConnectUI.account.address; // Retorna endereço raw
     } catch (error) {
       console.error('Erro ao conectar a carteira:', error);
       throw error;
