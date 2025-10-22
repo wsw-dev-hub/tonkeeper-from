@@ -49,7 +49,7 @@ export class TonService {
   }
 
   // Obtém o endereço atual da carteira com retries
-  async getCurrentWalletAddress(maxRetries = 3, retryDelay = 1000) {
+  async getCurrentWalletAddress(maxRetries = 5, retryDelay = 1000) {
     console.log('Obtendo endereço atual da carteira');
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -101,7 +101,7 @@ export class TonService {
     }
   }
 
-  // Obtém taxas da transação (tentativa via API)
+  // Obtém taxas da transação
   async getTransactionFees(transactionHash, walletAddress) {
     console.log('Obtendo taxas para transação:', transactionHash);
     try {
@@ -116,7 +116,7 @@ export class TonService {
       const feesNanoTON = data.total_fees || 10000000; // Fallback: 0.01 TON em nanoTON
       const feesTON = feesNanoTON / 1e9;
       console.log('Taxas obtidas:', feesTON, 'TON');
-      return feesTON;
+      return feesTON.toFixed(4);
     } catch (error) {
       console.warn('Erro ao obter taxas, usando estimativa de 0.01 TON:', error);
       return 0.01; // Estimativa de 0.01 TON
