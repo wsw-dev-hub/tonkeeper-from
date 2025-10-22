@@ -96,7 +96,7 @@ export class TonService {
       return this.tonConnectUI.account?.address || 'Desconhecido';
     } catch (error) {
       console.error('Erro ao conectar a carteira:', error);
-      throw new Error('Falha ao conectar a carteira');
+      throw error; // Propagar erro original para capturar _WalletAlreadyConnectedError
     }
   }
 
@@ -106,6 +106,10 @@ export class TonService {
     try {
       await this.tonConnectUI.disconnect();
       console.log('Carteira desconectada');
+      // Limpar sessionStorage relacionado ao TON Connect
+      sessionStorage.removeItem('ton-connect-storage_bridge-connection');
+      sessionStorage.removeItem('ton-connect-storage_protocol-version');
+      console.log('sessionStorage do TON Connect limpo');
     } catch (error) {
       console.error('Erro ao desconectar carteira:', error);
       throw new Error('Falha ao desconectar a carteira');
@@ -142,7 +146,7 @@ export class TonService {
       hash: result.boc,
       address,
       amount,
-      network: 'testnet'
+      network: 'Testnet'
     };
   }
 }
