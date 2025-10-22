@@ -3,7 +3,11 @@ import { TonService } from '../services/tonService.js';
 document.addEventListener('DOMContentLoaded', async () => {
   const tonService = new TonService();
   const form = document.getElementById('transferForm');
-  const status = document.getElementById('status');
+  const operationMessage = document.getElementById('operation-message');
+  const hashElement = document.getElementById('hash');
+  const addressElement = document.getElementById('address');
+  const amountElement = document.getElementById('amount');
+  const networkElement = document.getElementById('network');
   const balanceElement = document.getElementById('balance');
   const backBtn = document.getElementById('backBtn');
 
@@ -20,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error(`Tentativa ${attempt} de obter saldo falhou:`, error);
         if (attempt === retries) {
           balanceElement.textContent = `Saldo: Erro ao carregar`;
-          status.textContent = `Status: Erro ao obter saldo - ${error.message || 'Tente novamente.'}`;
+          operationMessage.textContent = `Status: Erro ao obter saldo - ${error.message || 'Tente novamente.'}`;
           return false;
         }
         console.log(`Aguardando ${retryDelay}ms antes da próxima tentativa`);
@@ -39,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('Sessão encerrada: sessionStorage limpo e carteira desconectada');
     } catch (error) {
       console.error('Erro ao encerrar sessão:', error);
-      status.textContent = `Status: Erro ao encerrar sessão - ${error.message || 'Tente novamente.'}`;
+      operationMessage.textContent = `Status: Erro ao encerrar sessão - ${error.message || 'Tente novamente.'}`;
       throw error;
     }
   };
@@ -50,24 +54,32 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Aguardar autenticação da carteira e carregar saldo
   try {
-    status.textContent = 'Status: Verificando conexão com a carteira...';
+    operationMessage.textContent = 'Status: Verificando conexão com a carteira...';
     console.log('Iniciando verificação de conexão em transfer.html');
     const { connected, address } = await tonService.checkConnection();
     
     if (!connected || (authenticatedWallet && address !== authenticatedWallet)) {
-      status.textContent = `Status: ${!connected ? 'Nenhuma carteira conectada' : 'Carteira diferente da autenticada'}. Conecte a carteira correta para continuar.`;
+      operationMessage.textContent = `Status: ${!connected ? 'Nenhuma carteira conectada' : 'Carteira diferente da autenticada'}. Conecte a carteira correta para continuar.`;
       console.log('Conexão inválida, mantendo usuário na página');
       balanceElement.textContent = 'Saldo: N/A';
+      hashElement.textContent = 'Hash: -';
+      addressElement.textContent = 'Endereço: -';
+      amountElement.textContent = 'Valor: -';
+      networkElement.textContent = 'Rede: -';
       return;
     }
     
-    status.textContent = `Status: Conectado como ${address}`;
+    operationMessage.textContent = `Status: Conectado como ${address}`;
     console.log('Conexão confirmada:', address);
     await updateBalance(); // Carregar saldo inicial
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
-    status.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
-    balanceElement.text = 'Saldo: Erro ao carregar';
+    operationMessage.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
+    balanceElement.textContent = 'Saldo: Erro ao carregar';
+    hashElement.textContent = 'Hash: -';
+    addressElement.textContent = 'Endereço: -';
+    amountElement.textContent = 'Valor: -';
+    networkElement.textContent = 'Rede: -';
     return;
   }
 
@@ -78,13 +90,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const amount = document.getElementById('amount').value;
 
     if (!address || !amount || amount <= 0) {
-      status.textContent = 'Status: Insira um endereço e valor válidos.';
+      operationMessage.textContent = 'Status: Insira um endereço e valor válidos.';
       console.log('Validação de entrada falhou:', { address, amount });
       return;
     }
 
     if (!tonService.validateAddress(address)) {
-      status.textContent = 'Status: Endereço inválido. Deve ter 48 caracteres, começar com EQ, UQ, 0Q ou kQ, e conter apenas caracteres base64.';
+      operationMessage.textContent = 'Status: Endereço inválido. Deve ter 48 caracteres, começar com EQ, UQ, 0Q ou kQ, e conter apenas caracteres base64.';
       console.log('Endereço inválido:', address);
       return;
     }
@@ -92,7 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Verificar se a carteira atual é a autenticada
     const currentWallet = await tonService.getCurrentWalletAddress();
     if (authenticatedWallet && currentWallet !== authenticatedWallet) {
-      status.textContent = 'Status: Carteira atual não corresponde à autenticada. Conecte a carteira correta.';
+      operationMessage.textContent = 'Status: Carteira atual não corresponde à autenticada. Conecte a carteira correta.';
       console.log('Carteira atual não corresponde:', { currentWallet, authenticatedWallet });
       return;
     }
@@ -102,16 +114,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       `Você deseja enviar ${amount} TON para o endereço ${address} usando a carteira ${currentWallet} na testnet?`
     );
     if (!confirmTransaction) {
-      status.textContent = 'Status: Transação cancelada pelo usuário.';
+      operationMessage.textContent = 'Status: Transação cancelada pelo usuário.';
       console.log('Transação cancelada pelo usuário');
       return;
     }
 
     try {
-      status.textContent = 'Status: Aguardando confirmação da carteira...';
+      operationMessage.textContent = 'Status: Aguardando confirmação da carteira...';
       console.log('Enviando transação:', { address, amount, wallet: currentWallet });
       const result = await tonService.sendTransaction(address, amount);
-      status.textContent = 'Status: Transação enviada. Aguardando 10 segundos para confirmação na blockchain...';
+      operationMessage.textContent = 'Status: Transação enviada. Aguardando 10 segundos para confirmação na blockchain...';
       console.log('Transação enviada, aguardando 10 segundos para atualizar saldo');
 
       // Aguardar 10 segundos antes de atualizar o saldo
@@ -120,29 +132,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Atualizar saldo com retries
       const updated = await updateBalance();
       if (updated) {
-        status.textContent = `Transação concluída com sucesso!
-          - Hash: ${result.hash}
-          - Endereço de destino: ${result.address}
-          - Valor: ${result.amount} TON
-          - Rede: ${result.network}`;
+        operationMessage.textContent = 'Status: Transação concluída com sucesso!';
+        hashElement.textContent = `Hash: ${result.hash}`;
+        addressElement.textContent = `Endereço: ${result.address}`;
+        amountElement.textContent = `Valor: ${result.amount} TON`;
+        networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída e saldo atualizado:', result);
       } else {
-        status.textContent = `Transação enviada, mas falha ao atualizar saldo:
-          - Hash: ${result.hash}
-          - Endereço de destino: ${result.address}
-          - Valor: ${result.amount} TON
-          - Rede: ${result.network}`;
+        operationMessage.textContent = 'Status: Transação enviada, mas falha ao atualizar saldo.';
+        hashElement.textContent = `Hash: ${result.hash}`;
+        addressElement.textContent = `Endereço: ${result.address}`;
+        amountElement.textContent = `Valor: ${result.amount} TON`;
+        networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída, mas saldo não atualizado:', result);
       }
     } catch (error) {
       console.error('Erro na transação:', error);
-      status.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
+      operationMessage.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
+      hashElement.textContent = 'Hash: -';
+      addressElement.textContent = 'Endereço: -';
+      amountElement.textContent = 'Valor: -';
+      networkElement.textContent = 'Rede: -';
     }
   });
 
   // Botão de voltar
   backBtn.addEventListener('click', async () => {
-    status.textContent = 'Status: Encerrando sessão...';
+    operationMessage.textContent = 'Status: Encerrando sessão...';
     try {
       await endSession();
       console.log('Redirecionando para index.html após encerramento da sessão');

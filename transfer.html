@@ -17,7 +17,13 @@
       <input type="number" id="amount" placeholder="Ex.: 0.1" step="0.01" min="0">
       <button type="submit" id="transferBtn">Enviar Transação</button>
     </form>
-    <p id="status">Status: Aguardando transferência...</p>
+    <div id="status">
+      <p id="operation-message">Status: Aguardando transferência...</p>
+      <p id="hash" class="status-detail">Hash: -</p>
+      <p id="address" class="status-detail">Endereço: -</p>
+      <p id="amount" class="status-detail">Valor: -</p>
+      <p id="network" class="status-detail">Rede: -</p>
+    </div>
     <button id="backBtn">Voltar ao Login</button>
   </div>
   <script type="module" src="src/controllers/transferController.js"></script>

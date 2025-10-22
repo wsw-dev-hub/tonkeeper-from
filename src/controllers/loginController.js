@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const connectBtn = document.getElementById('connectBtn');
   const status = document.getElementById('status');
 
-  // Verificar se há carteira em cache
   try {
     status.textContent = 'Status: Verificando carteira em cache...';
     console.log('Verificando carteira em cache ao carregar index.html');
@@ -15,10 +14,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (connected && authenticatedWallet && address === authenticatedWallet) {
       console.log('Carteira em cache detectada:', address);
       status.textContent = `Status: Carteira conectada (${address}). Redirecionando para transfer.html...`;
-      setTimeout(() => window.location.href = 'transfer.html', 1000); // Delay para UX
+      setTimeout(() => window.location.href = 'transfer.html', 1000);
       return;
     } else if (connected) {
-      // Desconectar se a carteira não corresponder ao authenticatedWallet
       console.log('Carteira conectada não corresponde ao authenticatedWallet, desconectando');
       await tonService.disconnectWallet();
       status.textContent = 'Status: Carteira anterior desconectada. Conecte uma nova carteira.';
@@ -48,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       status.textContent = `Status: Carteira conectada (${walletAddress}). Redirecionando...`;
       console.log('Conexão confirmada, armazenando endereço:', walletAddress);
       sessionStorage.setItem('authenticatedWallet', walletAddress);
-      setTimeout(() => window.location.href = 'transfer.html', 1000); // Delay para UX
+      setTimeout(() => window.location.href = 'transfer.html', 1000);
     } catch (error) {
       console.error('Erro ao conectar:', error);
       status.textContent = `Status: Erro - ${error.message || 'Falha na conexão. Verifique se a extensão Tonkeeper está ativa e na testnet.'}`;

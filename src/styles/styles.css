@@ -66,14 +66,28 @@ button:hover {
   background-color: #0056b3;
 }
 
-p#status {
-  white-space: pre-wrap;
-  overflow-wrap: break-word; /* Quebra palavras longas */
-  max-width: 100%; /* Respeita os limites do contêiner */
+#status {
   margin-top: 1rem;
+  text-align: left; /* Alinhar à esquerda para melhor legibilidade */
+}
+
+#operation-message {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-width: 100%;
   font-size: 0.9rem;
   line-height: 1.4;
-  word-break: break-all; /* Garante que hashes longos sejam quebrados */
+  margin-bottom: 0.5rem;
+}
+
+.status-detail {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0.2rem 0;
+  word-break: break-all; /* Quebra hashes e endereços longos */
 }
 
 /* Media Queries para responsividade */
@@ -95,8 +109,13 @@ p#status {
     font-size: 0.85rem;
   }
 
-  p#status {
+  #operation-message {
     font-size: 0.8rem;
+    line-height: 1.3;
+  }
+
+  .status-detail {
+    font-size: 0.75rem;
     line-height: 1.3;
   }
 
@@ -118,8 +137,13 @@ p#status {
     font-size: 0.8rem;
   }
 
-  p#status {
+  #operation-message {
     font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .status-detail {
+    font-size: 0.7rem;
     line-height: 1.2;
   }
 
