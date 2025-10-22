@@ -6,6 +6,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const status = document.getElementById('status');
   const backBtn = document.getElementById('backBtn');
 
+  // Função para encerrar a sessão
+  const endSession = async () => {
+    try {
+      console.log('Encerrando sessão: desconectando carteira e limpando sessionStorage');
+      await tonService.disconnectWallet();
+      sessionStorage.removeItem('authenticatedWallet');
+      console.log('Sessão encerrada: sessionStorage limpo e carteira desconectada');
+    } catch (error) {
+      console.error('Erro ao encerrar sessão:', error);
+      status.textContent = `Status: Erro ao encerrar sessão - ${error.message || 'Tente novamente.'}`;
+      throw error; // Propagar erro para evitar redirecionamento
+    }
+  };
+
   // Obter endereço autenticado do sessionStorage
   const authenticatedWallet = sessionStorage.getItem('authenticatedWallet');
   console.log('Endereço autenticado do sessionStorage:', authenticatedWallet);
@@ -84,14 +98,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Botão de voltar
   backBtn.addEventListener('click', async () => {
-    console.log('Botão de voltar clicado, desconectando carteira e limpando sessionStorage');
+    status.textContent = 'Status: Encerrando sessão...';
     try {
-      await tonService.disconnectWallet();
-      sessionStorage.removeItem('authenticatedWallet');
-      console.log('sessionStorage limpo e carteira desconectada');
+      await endSession();
+      console.log('Redirecionando para index.html após encerramento da sessão');
+      window.location.href = 'index.html';
     } catch (error) {
-      console.error('Erro ao desconectar carteira:', error);
+      // Não redireciona se a desconexão falhar
+      console.log('Redirecionamento cancelado devido a erro na desconexão');
     }
-    window.location.href = 'index.html';
   });
 });

@@ -2,7 +2,7 @@ import { TonConnectUI } from '@tonconnect/ui';
 
 export class TonService {
   constructor() {
-    // Limpar sessionStorage relacionado ao TON Connect, exceto authenticatedWallet
+    // Limpar sessionStorage relacionado ao TON Connect
     try {
       sessionStorage.removeItem('ton-connect-storage_bridge-connection');
       sessionStorage.removeItem('ton-connect-storage_protocol-version');
@@ -11,61 +11,36 @@ export class TonService {
       console.warn('Erro ao limpar sessionStorage:', error);
     }
 
-    this.tonConnectUI = new TonConnectUI({
-      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json',
-      network: 'testnet'
-    });
-    console.log('TonConnectUI inicializado');
+    try {
+      this.tonConnectUI = new TonConnectUI({
+        manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json',
+        network: 'testnet'
+      });
+      console.log('TonConnectUI inicializado com sucesso');
+    } catch (error) {
+      console.error('Erro ao inicializar TonConnectUI:', error);
+      throw new Error('Falha na inicialização do TON Connect SDK');
+    }
   }
 
-  // Verifica conexão com retries
-  async checkConnection(maxRetries = 4, retryDelay = 2000, timeoutPerAttempt = 12000) {
+  // Verifica conexão com retries (usado apenas para verificação de cache)
+  async checkConnection(maxRetries = 3, retryDelay = 4000, timeoutPerAttempt = 9000) {
     console.log('Iniciando verificação de conexão com a carteira');
     
     // Aguarda inicialização do SDK
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 6000)); // 6s
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`Tentativa ${attempt} de verificação de conexão`);
-        return await new Promise((resolve, reject) => {
-          // Verifica diretamente tonConnectUI.connected
-          if (this.tonConnectUI.connected) {
-            console.log('Conexão detectada diretamente:', this.tonConnectUI.account?.address);
-            resolve({
-              connected: true,
-              address: this.tonConnectUI.account?.address || 'Desconhecido'
-            });
-            return;
-          }
-
-          // Fallback com onStatusChange
-          const unsubscribe = this.tonConnectUI.onStatusChange(
-            (walletInfo) => {
-              console.log('onStatusChange disparado:', walletInfo);
-              if (walletInfo) {
-                resolve({
-                  connected: true,
-                  address: walletInfo.account?.address || 'Desconhecido'
-                });
-                unsubscribe();
-              } else {
-                reject(new Error('Nenhuma carteira conectada'));
-              }
-            },
-            (error) => {
-              console.error('Erro em onStatusChange:', error);
-              reject(error);
-              unsubscribe();
-            }
-          );
-
-          // Timeout por tentativa
-          setTimeout(() => {
-            reject(new Error('Timeout na verificação da conexão'));
-            unsubscribe();
-          }, timeoutPerAttempt);
-        });
+        if (this.tonConnectUI.account && this.tonConnectUI.connected) {
+          console.log('Conexão detectada:', this.tonConnectUI.account?.address);
+          return {
+            connected: true,
+            address: this.tonConnectUI.account?.address || 'Desconhecido'
+          };
+        }
+        throw new Error('Nenhuma carteira conectada');
       } catch (error) {
         console.warn(`Tentativa ${attempt} falhou: ${error.message}`);
         if (attempt === maxRetries) {
@@ -81,7 +56,7 @@ export class TonService {
   async getCurrentWalletAddress() {
     console.log('Obtendo endereço atual da carteira');
     await new Promise(resolve => setTimeout(resolve, 1000)); // Aguarda inicialização
-    if (this.tonConnectUI.connected) {
+    if (this.tonConnectUI.connected && this.tonConnectUI.account) {
       return this.tonConnectUI.account?.address || 'Desconhecido';
     }
     return null;
@@ -91,12 +66,21 @@ export class TonService {
   async connectWallet() {
     console.log('Iniciando conexão com a carteira');
     try {
+      if (!this.tonConnectUI) {
+        throw new Error('TonConnectUI não inicializado');
+      }
+      console.log('Chamando tonConnectUI.connectWallet()');
       await this.tonConnectUI.connectWallet();
+      // Aguarda atualização do estado do SDK
+      await new Promise(resolve => setTimeout(resolve, 4000)); // Aumentado para 4s
+      if (!this.tonConnectUI.connected || !this.tonConnectUI.account) {
+        throw new Error('Falha ao detectar carteira após conexão');
+      }
       console.log('Carteira conectada:', this.tonConnectUI.account?.address);
       return this.tonConnectUI.account?.address || 'Desconhecido';
     } catch (error) {
       console.error('Erro ao conectar a carteira:', error);
-      throw error; // Propagar erro original para capturar _WalletAlreadyConnectedError
+      throw error; // Propagar erro original
     }
   }
 
@@ -104,13 +88,30 @@ export class TonService {
   async disconnectWallet() {
     console.log('Desconectando carteira');
     try {
-      await this.tonConnectUI.disconnect();
-      console.log('Carteira desconectada');
+      if (this.tonConnectUI.connected) {
+        await this.tonConnectUI.disconnect();
+        console.log('Carteira desconectada');
+      } else {
+        console.log('Nenhuma carteira conectada para desconectar');
+      }
       // Limpar sessionStorage relacionado ao TON Connect
       sessionStorage.removeItem('ton-connect-storage_bridge-connection');
       sessionStorage.removeItem('ton-connect-storage_protocol-version');
       console.log('sessionStorage do TON Connect limpo');
+      // Limpeza adicional de estado interno
+      if (this.tonConnectUI.connectionRestored) {
+        console.log('Forçando restauração de estado do TON Connect');
+        this.tonConnectUI.connectionRestored = false;
+      }
     } catch (error) {
+      if (error.message.includes('_WalletNotConnectedError')) {
+        console.log('Ignorando _WalletNotConnectedError, nenhuma carteira conectada');
+        // Limpar sessionStorage mesmo assim
+        sessionStorage.removeItem('ton-connect-storage_bridge-connection');
+        sessionStorage.removeItem('ton-connect-storage_protocol-version');
+        console.log('sessionStorage do TON Connect limpo após erro');
+        return; // Não propagar o erro
+      }
       console.error('Erro ao desconectar carteira:', error);
       throw new Error('Falha ao desconectar a carteira');
     }

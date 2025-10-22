@@ -1,42 +1,54 @@
 import { TonService } from '../services/tonService.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const tonService = new TonService();
   const connectBtn = document.getElementById('connectBtn');
   const status = document.getElementById('status');
 
+  // Verificar se há carteira em cache
+  try {
+    status.textContent = 'Status: Verificando carteira em cache...';
+    console.log('Verificando carteira em cache ao carregar index.html');
+    const { connected, address } = await tonService.checkConnection();
+    const authenticatedWallet = sessionStorage.getItem('authenticatedWallet');
+
+    if (connected && authenticatedWallet && address === authenticatedWallet) {
+      console.log('Carteira em cache detectada:', address);
+      status.textContent = `Status: Carteira conectada (${address}). Redirecionando para transfer.html...`;
+      setTimeout(() => window.location.href = 'transfer.html', 1000); // Delay para UX
+      return;
+    } else if (connected) {
+      // Desconectar se a carteira não corresponder ao authenticatedWallet
+      console.log('Carteira conectada não corresponde ao authenticatedWallet, desconectando');
+      await tonService.disconnectWallet();
+      status.textContent = 'Status: Carteira anterior desconectada. Conecte uma nova carteira.';
+    } else {
+      console.log('Nenhuma carteira conectada em cache');
+      status.textContent = 'Status: Nenhuma carteira conectada. Conecte uma carteira.';
+    }
+  } catch (error) {
+    console.warn('Erro ao verificar carteira em cache:', error);
+    try {
+      sessionStorage.removeItem('ton-connect-storage_bridge-connection');
+      sessionStorage.removeItem('ton-connect-storage_protocol-version');
+      console.log('sessionStorage limpo após falha na verificação');
+      status.textContent = 'Status: Nenhuma carteira conectada. Conecte uma carteira.';
+    } catch (cleanError) {
+      console.error('Erro ao limpar sessionStorage:', cleanError);
+      status.textContent = `Status: Erro ao verificar carteira em cache - ${error.message || 'Tente novamente.'}`;
+    }
+  }
+
   connectBtn.addEventListener('click', async () => {
     try {
-      status.textContent = 'Status: Verificando conexão existente...';
-      console.log('Verificando conexão existente antes de conectar');
-
-      // Verificar se já há uma carteira conectada
-      const { connected, address } = await tonService.checkConnection();
-      if (connected) {
-        console.log('Carteira já conectada:', address);
-        status.textContent = `Status: Carteira já conectada (${address}). Desconectando para nova conexão...`;
-        await tonService.disconnectWallet();
-        console.log('Carteira desconectada para permitir nova conexão');
-      }
-
       status.textContent = 'Status: Solicitando conexão com a carteira...';
       console.log('Solicitando conexão com a carteira');
       const walletAddress = await tonService.connectWallet();
       
-      status.textContent = 'Status: Verificando conexão...';
-      console.log('Verificando estado da conexão');
-      const { connected: verifiedConnected, address: verifiedAddress } = await tonService.checkConnection();
-      
-      if (verifiedConnected) {
-        // Armazenar endereço no sessionStorage após confirmação
-        sessionStorage.setItem('authenticatedWallet', verifiedAddress);
-        console.log('Endereço armazenado no sessionStorage:', verifiedAddress);
-        status.textContent = `Status: Carteira conectada (${verifiedAddress}). Redirecionando...`;
-        console.log('Conexão confirmada, redirecionando para transfer.html');
-        window.location.href = 'transfer.html';
-      } else {
-        throw new Error('Falha ao verificar a conexão após confirmação');
-      }
+      status.textContent = `Status: Carteira conectada (${walletAddress}). Redirecionando...`;
+      console.log('Conexão confirmada, armazenando endereço:', walletAddress);
+      sessionStorage.setItem('authenticatedWallet', walletAddress);
+      setTimeout(() => window.location.href = 'transfer.html', 1000); // Delay para UX
     } catch (error) {
       console.error('Erro ao conectar:', error);
       status.textContent = `Status: Erro - ${error.message || 'Falha na conexão. Verifique se a extensão Tonkeeper está ativa e na testnet.'}`;
