@@ -180,8 +180,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       operationMessage.textContent = 'Status: Transação enviada. Aguardando 15 segundos para confirmação na blockchain...';
       console.log('Transação enviada:', result);
 
+      // Aguardar 15 segundos antes de atualizar o saldo
       await new Promise(resolve => setTimeout(resolve, 15000));
       
+      // Tentar obter taxas reais
       let fees = estimatedFees;
       try {
         fees = await tonService.getTransactionFees(result.hash, currentWallet);
@@ -190,9 +192,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn('Falha ao obter taxas reais, usando estimativa:', feeError);
       }
 
+      // Atualizar saldo com retries
       const updated = await updateBalance();
+      const transactionLink = result.hash ? `<a href="https://testnet.tonscan.org/tx/${encodeURIComponent(result.hash)}" target="_blank" rel="noopener noreferrer">Ver detalhes</a>` : 'Hash inválido - verifique manualmente.';
+      
       if (updated) {
-        operationMessage.innerHTML = `Status: Transação concluída com sucesso! <a href="https://testnet.tonscan.org/tx/${result.hash}" target="_blank">Ver detalhes</a>`;
+        operationMessage.innerHTML = `Status: Transação concluída com sucesso! ${transactionLink}`;
         senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || 'Desconhecido'}`;
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
         transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(9)} TON`;
@@ -201,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída e saldo atualizado:', result, 'Taxas:', fees);
       } else {
-        operationMessage.innerHTML = `Status: Transação enviada, mas falha ao atualizar saldo. <a href="https://testnet.tonscan.org/tx/${result.hash}" target="_blank">Ver detalhes</a>`;
+        operationMessage.innerHTML = `Status: Transação enviada, mas falha ao atualizar saldo. ${transactionLink}`;
         senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || 'Desconhecido'}`;
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
         transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(9)} TON`;

@@ -80,6 +80,17 @@ button:hover {
   margin-bottom: 0.5rem;
 }
 
+#operation-message a {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+  word-break: break-all;
+}
+
+#operation-message a:hover {
+  color: #0056b3;
+}
+
 .status-detail {
   white-space: pre-wrap;
   overflow-wrap: break-word;
@@ -122,6 +133,10 @@ button:hover {
   button {
     padding: 0.5rem;
   }
+
+  #operation-message a {
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -152,12 +167,6 @@ button:hover {
   }
 
   #operation-message a {
-  color: #007bff;
-  text-decoration: underline;
-  cursor: pointer;
-  }
-
-  #operation-message a:hover {
-    color: #0056b3;
+    font-size: 0.75rem;
   }
 }
