@@ -150,4 +150,14 @@ button:hover {
   .container {
     margin: 1rem auto;
   }
+
+  #operation-message a {
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+  }
+
+  #operation-message a:hover {
+    color: #0056b3;
+  }
 }

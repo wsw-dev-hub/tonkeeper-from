@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         console.log(`Tentativa ${attempt} de atualizar saldo`);
-        // Verificar conexão antes de obter saldo
         const { connected } = await tonService.checkConnection();
         if (!connected) {
           throw new Error('Carteira desconectada durante atualização de saldo');
@@ -80,12 +79,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     operationMessage.textContent = `Status: Conectado como ${address}`;
-    senderAddressElement.textContent = `Endereço da Carteira: ${address}`; // Exibir endereço raw
+    senderAddressElement.textContent = `Endereço da Carteira: ${address}`;
     recipientAddressElement.textContent = 'Endereço de Recebimento: -';
     transferredAmountElement.textContent = 'Valor Transferido: -';
     networkFeeElement.textContent = 'Taxa de Rede: -';
     console.log('Conexão confirmada, endereço da carteira exibido:', address);
-    await updateBalance(); // Carregar saldo inicial
+    await updateBalance();
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
     operationMessage.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
@@ -106,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const amountInput = document.getElementById('amount').value.trim();
     console.log('Dados do formulário:', { recipientAddress, amountInput });
 
-    if (!recipientAddress || !amountInput || parseFloat(amountInput) <= 0) {
+    if (!recipientAddress || !amountInput) {
       operationMessage.textContent = 'Status: Insira um endereço e valor válidos.';
       console.log('Validação de entrada falhou:', { recipientAddress, amountInput });
       transferredAmountElement.textContent = 'Valor Transferido: -';
@@ -114,19 +113,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    const amount = parseFloat(amountInput);
-    if (isNaN(amount)) {
-      operationMessage.textContent = 'Status: Valor inválido. Insira um número válido.';
+    const normalizedAmountInput = amountInput.replace(',', '.');
+    const amount = parseFloat(normalizedAmountInput);
+    if (isNaN(amount) || amount <= 0) {
+      operationMessage.textContent = 'Status: Valor inválido. Insira um número maior que 0.';
       console.log('Valor inválido:', amountInput);
       transferredAmountElement.textContent = 'Valor Transferido: -';
       networkFeeElement.textContent = 'Taxa de Rede: -';
       return;
     }
 
+    // Validar número de dígitos decimais
+    const decimalPart = normalizedAmountInput.split('.')[1];
+    if (decimalPart && decimalPart.length > 9) {
+      operationMessage.textContent = 'Status: Valor inválido. Máximo de 9 dígitos após o separador decimal.';
+      console.log('Validação falhou: mais de 9 dígitos decimais', { amountInput, decimalPart });
+      transferredAmountElement.textContent = 'Valor Transferido: -';
+      networkFeeElement.textContent = 'Taxa de Rede: -';
+      return;
+    }
+
     // Validar se a quantia é superior à taxa de rede
-    const estimatedFees = 0.01; // Taxa estimada
+    const estimatedFees = 0.01;
     if (amount <= estimatedFees) {
-      operationMessage.textContent = `Status: Valor inválido. A quantia deve ser superior à taxa de rede (${estimatedFees.toFixed(4)} TON).`;
+      operationMessage.textContent = `Status: Valor inválido. A quantia deve ser maior que ${estimatedFees.toFixed(4)} TON.`;
       console.log('Validação falhou: quantia menor ou igual à taxa de rede', { amount, estimatedFees });
       transferredAmountElement.textContent = 'Valor Transferido: -';
       networkFeeElement.textContent = 'Taxa de Rede: -';
@@ -155,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Solicitar confirmação do usuário
     const confirmTransaction = window.confirm(
-      `Você deseja enviar ${amount.toFixed(4)} TON para o endereço ${recipientAddress} usando a carteira ${currentWallet} na testnet?\nTaxa de Rede Estimada: ${estimatedFees.toFixed(4)} TON\nTotal: ${totalAmount.toFixed(4)} TON`
+      `Você deseja enviar ${amount.toFixed(9)} TON para o endereço ${recipientAddress} usando a carteira ${currentWallet} na testnet?\nTaxa de Rede Estimada: ${estimatedFees.toFixed(4)} TON\nTotal: ${totalAmount.toFixed(9)} TON`
     );
     if (!confirmTransaction) {
       operationMessage.textContent = 'Status: Transação cancelada pelo usuário.';
@@ -170,10 +180,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       operationMessage.textContent = 'Status: Transação enviada. Aguardando 15 segundos para confirmação na blockchain...';
       console.log('Transação enviada:', result);
 
-      // Aguardar 15 segundos antes de atualizar o saldo
       await new Promise(resolve => setTimeout(resolve, 15000));
       
-      // Tentar obter taxas reais
       let fees = estimatedFees;
       try {
         fees = await tonService.getTransactionFees(result.hash, currentWallet);
@@ -182,22 +190,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.warn('Falha ao obter taxas reais, usando estimativa:', feeError);
       }
 
-      // Atualizar saldo com retries
       const updated = await updateBalance();
       if (updated) {
-        operationMessage.textContent = 'Status: Transação concluída com sucesso!';
+        operationMessage.innerHTML = `Status: Transação concluída com sucesso! <a href="https://testnet.tonscan.org/tx/${result.hash}" target="_blank">Ver detalhes</a>`;
         senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || 'Desconhecido'}`;
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
-        transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(4)} TON`;
+        transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(9)} TON`;
         networkFeeElement.textContent = `Taxa de Rede: ${fees} TON`;
         hashElement.textContent = `Hash: ${result.hash}`;
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída e saldo atualizado:', result, 'Taxas:', fees);
       } else {
-        operationMessage.textContent = 'Status: Transação enviada, mas falha ao atualizar saldo.';
+        operationMessage.innerHTML = `Status: Transação enviada, mas falha ao atualizar saldo. <a href="https://testnet.tonscan.org/tx/${result.hash}" target="_blank">Ver detalhes</a>`;
         senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || 'Desconhecido'}`;
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
-        transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(4)} TON`;
+        transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(9)} TON`;
         networkFeeElement.textContent = `Taxa de Rede: ${fees} TON`;
         hashElement.textContent = `Hash: ${result.hash}`;
         networkElement.textContent = `Rede: ${result.network}`;
@@ -208,14 +215,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       operationMessage.textContent = `Status: Erro - ${error.message || 'Falha na transação. Tente novamente.'}`;
       senderAddressElement.textContent = `Endereço da Carteira: ${currentWallet || authenticatedWallet || 'Desconhecido'}`;
       recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress || '-'}`;
-      transferredAmountElement.textContent = `Valor Transferido: ${amount ? amount.toFixed(4) : '-'}`;
+      transferredAmountElement.textContent = `Valor Transferido: ${amount ? amount.toFixed(9) : '-'}`;
       networkFeeElement.textContent = 'Taxa de Rede: -';
       hashElement.textContent = 'Hash: -';
       networkElement.textContent = 'Rede: -';
     }
   });
 
-  // Botão de voltar
   backBtn.addEventListener('click', async () => {
     operationMessage.textContent = 'Status: Encerrando sessão...';
     try {

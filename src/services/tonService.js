@@ -81,7 +81,7 @@ export class TonService {
       const address = this.tonConnectUI.account.address;
       console.log('Consultando saldo para endereço:', address);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000); // Timeout aumentado
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout aumentado
       const response = await fetch(`https://testnet.tonapi.io/v2/accounts/${address}`, {
         signal: controller.signal
       });
@@ -94,7 +94,7 @@ export class TonService {
       const balanceNanoTON = data.balance;
       const balanceTON = balanceNanoTON / 1e9;
       console.log('Saldo obtido:', balanceTON, 'TON');
-      return balanceTON.toFixed(4);
+      return balanceTON.toFixed(6);
     } catch (error) {
       console.error('Erro ao obter saldo:', error);
       throw new Error(`Falha ao obter saldo: ${error.message}`);
@@ -116,10 +116,10 @@ export class TonService {
       const feesNanoTON = data.total_fees || 10000000; // Fallback: 0.01 TON em nanoTON
       const feesTON = feesNanoTON / 1e9;
       console.log('Taxas obtidas:', feesTON, 'TON');
-      return feesTON.toFixed(4);
+      return feesTON.toFixed(6);
     } catch (error) {
       console.warn('Erro ao obter taxas, usando estimativa de 0.01 TON:', error);
-      return (0.01).toFixed(4);
+      return (0.01).toFixed(6);
     }
   }
 
