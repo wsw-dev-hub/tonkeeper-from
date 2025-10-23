@@ -123,6 +123,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Validar se a quantia é superior à taxa de rede
+    const estimatedFees = 0.01; // Taxa estimada
+    if (amount <= estimatedFees) {
+      operationMessage.textContent = `Status: Valor inválido. A quantia deve ser superior à taxa de rede (${estimatedFees.toFixed(4)} TON).`;
+      console.log('Validação falhou: quantia menor ou igual à taxa de rede', { amount, estimatedFees });
+      transferredAmountElement.textContent = 'Valor Transferido: -';
+      networkFeeElement.textContent = 'Taxa de Rede: -';
+      return;
+    }
+
     if (!tonService.validateAddress(recipientAddress)) {
       operationMessage.textContent = 'Status: Endereço inválido. Deve ter 48 caracteres, começar com EQ, UQ, 0Q ou kQ, e conter apenas caracteres base64.';
       console.log('Endereço inválido:', recipientAddress);
@@ -141,7 +151,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Estimar taxas
-    const estimatedFees = 0.01; // Estimativa de 0.01 TON
     const totalAmount = amount + estimatedFees;
 
     // Solicitar confirmação do usuário
@@ -158,11 +167,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       operationMessage.textContent = 'Status: Aguardando confirmação da carteira...';
       console.log('Enviando transação:', { recipientAddress, amount, wallet: currentWallet });
       const result = await tonService.sendTransaction(recipientAddress, amount);
-      operationMessage.textContent = 'Status: Transação enviada. Aguardando 10 segundos para confirmação na blockchain...';
+      operationMessage.textContent = 'Status: Transação enviada. Aguardando 15 segundos para confirmação na blockchain...';
       console.log('Transação enviada:', result);
 
       // Aguardar 15 segundos antes de atualizar o saldo
-      await new Promise(resolve => setTimeout(resolve, 10000));
+      await new Promise(resolve => setTimeout(resolve, 15000));
       
       // Tentar obter taxas reais
       let fees = estimatedFees;
