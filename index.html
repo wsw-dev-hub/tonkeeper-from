@@ -5,6 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login com Tonkeeper</title>
   <link rel="stylesheet" href="src/styles/styles.css">
+  <script type="module">
+    import { TonConnectUI } from 'https://cdn.jsdelivr.net/npm/@tonconnect/ui@2.3.1/dist/tonconnect-ui.min.js';
+    import { Address } from 'https://cdn.jsdelivr.net/npm/@ton/ton@16.0.0/dist/index.js';
+
+    // Inicializa TonConnect
+    const tonConnectUI = new TonConnectUI({
+      manifestUrl: 'https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json'
+    });
+
+    // Botão para conectar
+    document.getElementById('connectBtn').onclick = async () => {
+      await tonConnectUI.openModal();
+    };
+
+    // Escuta conexão
+    tonConnectUI.onStatusChange(async (wallet) => {
+      if (wallet) {
+        const addressRaw = wallet.account.address; // formato raw: 0:abc...
+        const addressFriendly = Address.parseRaw(addressRaw).toString(); // EQ...
+
+        console.log('Endereço Raw:', addressRaw);
+        console.log('Endereço Amigável:', addressFriendly);
+
+        document.getElementById('wallet-address').textContent = 
+          `Wallet: ${addressFriendly}`;
+
+        // Envia para o backend (Node.js)
+        await fetch('http://localhost:3001/save-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: addressFriendly })
+        });
+      } else {
+        document.getElementById('wallet-address').textContent = 'Não conectado';
+      }
+    });
+  </script>
 </head>
 <body>
   <div class="container">

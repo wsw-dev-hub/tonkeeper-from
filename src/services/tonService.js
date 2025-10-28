@@ -1,5 +1,34 @@
 import { TonConnectUI } from '@tonconnect/ui';
 
+//Implementação de captura (wallet-friendly)
+const express = require('express');
+const cors = require('cors');
+const { Address } = require('@ton/ton');
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+app.post('/save-wallet', (req, res) => {
+  const { address } = req.body;
+
+  try {
+    // Valida se é um endereço TON válido
+    const parsed = Address.parse(address);
+    console.log('Endereço válido:', parsed.toString());
+
+    res.json({ success: true, address: parsed.toString() });
+  } catch (e) {
+    res.status(400).json({ success: false, error: 'Endereço inválido' });
+  }
+});
+
+app.listen(3001, () => {
+  console.log('Backend rodando em http://localhost:3001');
+});
+
+
+
 export class TonService {
   constructor() {
     try {
