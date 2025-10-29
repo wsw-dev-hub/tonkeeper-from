@@ -105,9 +105,32 @@ export class TonService {
 
   // Obtém taxas da transação
   async getTransactionFees(transactionHash, walletAddress) {
-    console.log('Obtendo taxas para transação:', transactionHash);
+    console.log('Obtendo taxas para transação:', transactionHash,);
+    console.log('Obtendo endereço da wallet para transação:', walletAddress);
     try {
-      const response = await fetch(`https://testnet.tonapi.io/v2/blockchain/transactions/${transactionHash}`, {
+      /*const endpoint = `https://testnet.toncenter.com/api/v2/getTransactions?address=${walletAddress}&limit=1`;
+      console.log('Verificando retorno do endpoint: ', endpoint);
+
+      const respon = await fetch(endpoint);
+      const dt = await respon.json();
+
+      if (dt.ok && dt.result.length > 0) {
+        const tx = dt.result[0];
+        const hash = tx.transaction_id?.hash;
+        const lt = tx.transaction_id?.lt;
+        const fee = tx.fees ? (parseInt(tx.fees.total_fees) / 1e9).toFixed(9) : "0";
+
+        console.log(`Total fees:  ${dt.result[0].fee / 1e9}`);
+
+        console.log("Última transação:");
+        console.log(`→ Hash: ${hash}`);
+        console.log(`→ LT: ${lt}`);
+        console.log(`→ Valor: ${(parseInt(tx.in_msg.value) / 1e9).toFixed(9)} TON`);
+        console.log(`→ Fee: ${fee} TON`);
+      }*/
+
+      //const response = await fetch(`https://testnet.tonapi.io/v2/blockchain/transactions/${transactionHash}`, {
+      const response = await fetch(`https://testnet.toncenter.com/api/v2/getTransactions?address=${walletAddress}&limit=1`, {
         signal: new AbortController().signal
       });
       if (!response.ok) {
@@ -115,16 +138,34 @@ export class TonService {
       }
       const data = await response.json();
       console.log('Detalhes da transação:', data);
-      const feesNanoTON = data.total_fees || 10000000; // Fallback: 0.01 TON em nanoTON
+      const feesNanoTON = data.fee || 10000000; // Fallback: 0.01 TON em nanoTON
       const feesTON = feesNanoTON / 1e9;
+      //const feesTON = dt.result[0].fee / 1e9;
       console.log('Taxas obtidas:', feesTON, 'TON');
-      return feesTON.toFixed(6);
+      return feesTON.toFixed(9);
     } catch (error) {
       console.warn('Erro ao obter taxas, usando estimativa de 0.01 TON:', error);
       return (0.01).toFixed(6);
     }
   }
-
+  // Retorna o link auditável do Hash da Transação
+  async getHashsAudited(walletAddress){
+    try{
+      const response = await fetch(`https://testnet.toncenter.com/api/v2/getTransactions?address=${walletAddress}&limit=1`, {
+              signal: new AbortController().signal
+            });
+      if (!response.ok) {
+        throw new Error(`Falha ao obter o hash da transação: ${response.statusText}`);
+      }
+        const data = await response.json();
+        const auditHash =  data.result[0].in_msg.hash;
+        console.log('Hash auditável: ', auditHash);
+        return auditHash;
+      } catch (error) {
+        console.warn('Erro ao obter o Hash válido da tansação:', error);
+        return error;
+      }
+  }
   // Conecta a carteira
   async connectWallet() {
     console.log('Iniciando conexão com a carteira');

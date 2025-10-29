@@ -164,29 +164,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const totalAmount = amount + estimatedFees;
 
     // Solicitar confirmação do usuário
-    const confirmTransaction = window.confirm(
+    /*const confirmTransaction = window.confirm(
       `Você deseja enviar ${amount.toFixed(9)} TON para o endereço ${recipientAddress} usando a carteira ${currentWallet} na testnet?\nTaxa de Rede Estimada: ${estimatedFees.toFixed(4)} TON\nTotal: ${totalAmount.toFixed(9)} TON`
     );
     if (!confirmTransaction) {
       operationMessage.textContent = 'Status: Transação cancelada pelo usuário.';
       console.log('Transação cancelada pelo usuário');
       return;
-    }
+    }*/
 
     try {
       operationMessage.textContent = 'Status: Aguardando confirmação da carteira...';
       console.log('Enviando transação:', { recipientAddress, amount, wallet: currentWallet });
       const result = await tonService.sendTransaction(recipientAddress, amount);
       operationMessage.textContent = 'Status: Transação enviada. Aguardando 15 segundos para confirmação na blockchain...';
-      console.log('Transação enviada:', result);
+      //const auditHash = await tonService.getTransactionFees(transactionHash, walletAddress);
+      console.log('(1)Transação enviada:', result);
 
-      // Aguardar 15 segundos antes de atualizar o saldo
+      // Aguardar 10 segundos antes de atualizar o saldo
       await new Promise(resolve => setTimeout(resolve, 15000));
       
       // Tentar obter taxas reais
       let fees = estimatedFees;
       try {
         fees = await tonService.getTransactionFees(result.hash, currentWallet);
+        //const hashResult = await tonService.getHashsAudited(result.hash, currentWallet);
+        //console.log('Hash de envio: ', hashResult);
         console.log('Taxas reais obtidas:', fees);
       } catch (feeError) {
         console.warn('Falha ao obter taxas reais, usando estimativa:', feeError);
@@ -194,7 +197,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Atualizar saldo com retries
       const updated = await updateBalance();
-      const transactionLink = result.hash ? `<a href="https://testnet.tonscan.org/tx/${encodeURIComponent(result.hash)}" target="_blank" rel="noopener noreferrer">Ver detalhes</a>` : 'Hash inválido - verifique manualmente.';
+      const hashResult = await tonService.getHashsAudited(currentWallet);
+      console.log('Serial Hash: ', hashResult);
+      const transactionLink = result.hash ? `<a href="https://testnet.tonscan.org/tx/${encodeURIComponent(hashResult)}" target="_blank" rel="noopener noreferrer">Ver detalhes</a>` : 'Hash inválido - verifique manualmente.';
       
       if (updated) {
         operationMessage.innerHTML = `Status: Transação concluída com sucesso! ${transactionLink}`;
@@ -202,7 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
         transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(9)} TON`;
         networkFeeElement.textContent = `Taxa de Rede: ${fees} TON`;
-        hashElement.textContent = `Hash: ${result.hash}`;
+        hashElement.textContent = `Hash: ${hashResult}`;
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída e saldo atualizado:', result, 'Taxas:', fees);
       } else {
@@ -211,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         recipientAddressElement.textContent = `Endereço de Recebimento: ${recipientAddress}`;
         transferredAmountElement.textContent = `Valor Transferido: ${amount.toFixed(9)} TON`;
         networkFeeElement.textContent = `Taxa de Rede: ${fees} TON`;
-        hashElement.textContent = `Hash: ${result.hash}`;
+        hashElement.textContent = `Hash: ${hashResult}`;
         networkElement.textContent = `Rede: ${result.network}`;
         console.log('Transação concluída, mas saldo não atualizado:', result, 'Taxas:', fees);
       }
