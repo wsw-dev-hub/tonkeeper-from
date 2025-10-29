@@ -1,33 +1,5 @@
 import { TonConnectUI } from '@tonconnect/ui';
-
-//Implementação de captura (wallet-friendly)
-const express = require('express');
-const cors = require('cors');
-const { Address } = require('@ton/ton');
-const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-app.post('/save-wallet', (req, res) => {
-  const { address } = req.body;
-
-  try {
-    // Valida se é um endereço TON válido
-    const parsed = Address.parse(address);
-    console.log('Endereço válido:', parsed.toString());
-
-    res.json({ success: true, address: parsed.toString() });
-  } catch (e) {
-    res.status(400).json({ success: false, error: 'Endereço inválido' });
-  }
-});
-
-app.listen(3001, () => {
-  console.log('Backend rodando em http://localhost:3001');
-});
-
-
+import { toUserFriendlyAddress } from "@tonconnect/sdk";
 
 export class TonService {
   constructor() {
@@ -59,10 +31,10 @@ export class TonService {
       try {
         console.log(`Tentativa ${attempt} de verificação de conexão`);
         if (this.tonConnectUI.account && this.tonConnectUI.connected) {
-          console.log('Conexão detectada:', this.tonConnectUI.account.address);
+          console.log('Conexão detectada:', toUserFriendlyAddress(this.tonConnectUI.account.address, true));
           return {
             connected: true,
-            address: this.tonConnectUI.account.address // Retorna endereço raw
+            address: toUserFriendlyAddress(this.tonConnectUI.account.address, true) // Retorna endereço raw
           };
         }
         throw new Error('Nenhuma carteira conectada');
@@ -85,7 +57,8 @@ export class TonService {
         await new Promise(resolve => setTimeout(resolve, 1000));
         if (this.tonConnectUI.connected && this.tonConnectUI.account) {
           console.log('Endereço retornado:', this.tonConnectUI.account.address);
-          return this.tonConnectUI.account.address; // Retorna endereço raw
+          const friendly = toUserFriendlyAddress(this.tonConnectUI.account.address, true); // true = testnet
+          return friendly; // Retorna endereço raw
         }
         throw new Error('Nenhuma carteira conectada');
       } catch (error) {
@@ -107,7 +80,7 @@ export class TonService {
       if (!this.tonConnectUI.connected || !this.tonConnectUI.account) {
         throw new Error('Nenhuma carteira conectada');
       }
-      const address = this.tonConnectUI.account.address;
+      const address = toUserFriendlyAddress(this.tonConnectUI.account.address, true);
       console.log('Consultando saldo para endereço:', address);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // Timeout aumentado
@@ -117,7 +90,7 @@ export class TonService {
       clearTimeout(timeoutId);
       if (!response.ok) {
         throw new Error(`Falha ao obter saldo: ${response.statusText} (Status: ${response.status})`);
-      }
+  }
       const data = await response.json();
       console.log('Resposta da API:', data);
       const balanceNanoTON = data.balance;
@@ -165,8 +138,8 @@ export class TonService {
       if (!this.tonConnectUI.connected || !this.tonConnectUI.account) {
         throw new Error('Falha ao detectar carteira após conexão');
       }
-      console.log('Carteira conectada:', this.tonConnectUI.account.address);
-      return this.tonConnectUI.account.address; // Retorna endereço raw
+      console.log('Carteira conectada:', toUserFriendlyAddress(this.tonConnectUI.account.address, true));
+      return toUserFriendlyAddress(this.tonConnectUI.account.address, true); // Retorna endereço raw
     } catch (error) {
       console.error('Erro ao conectar a carteira:', error);
       throw error;

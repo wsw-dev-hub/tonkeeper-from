@@ -3,15 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login com Tonkeeper</title>
-  <script type="module" crossorigin src="/assets/index-C53mYJ6T.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DGKdC4Pa.css">
+  <title>Login com Tonkeeper</title>
+  <script type="module" crossorigin src="/assets/index-FHzY7w_g.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CJujvA0r.css">
 </head>
 <body>
   <div class="container">
     <h1>Conectar com Tonkeeper</h1>
     <button id="connectBtn">Conectar Carteira</button>
+    <!--<div id="connect"></div>-->
     <p id="status">Status: Aguardando conexão...</p>
-  </div>
+  </div>
+
+  <!--<script type="module">
+    import { TonConnectUI } from "@tonconnect/ui";
+    import { toUserFriendlyAddress } from "@tonconnect/sdk";
+
+    // 1️⃣ Crie a instância com o caminho do seu manifest
+    const tonConnectUI = new TonConnectUI({
+      manifestUrl: "https://wsw-dev-hub.github.io/tonkeeper-from/public/tonconnect-manifest.json",
+      buttonRootId: "connect",  // ✅ cria automaticamente o botão nessa div
+      uiPreferences: { theme: "SYSTEM" }
+    });
+
+    // 2️⃣ Renderiza o botão de conexão automaticamente
+    tonConnectUI.uiOptions = {
+      walletsList: { includeWallets: ["tonkeeper"] } // opcional
+    };
+
+    const out = (msg) => document.getElementById('status').textContent = msg;
+
+     // 2️⃣ Observa mudanças de conexão
+    tonConnectUI.onStatusChange((walletInfo) => {
+      if (walletInfo && walletInfo.account) {
+        // RAW address (hexadecimal)
+        const raw = walletInfo.account.address;
+        //const friendly = walletInfo.account.address;
+        // Converter para formato amigável (base64-url)
+        // ✅ Converte para endereço amigável Base64URL (sem Buffer errors)
+        const friendly = toUserFriendlyAddress(raw, true); // true = testnet
+
+        out(`✅ Conectado! Raw: ${raw} Friendly: ${friendly}`);
+      } else {
+        out("🔌 Wallet desconectada ou não detectada.");
+      }
+    });
+
+    //tonConnectUI.renderButton("#connect"); 
+    // 3️⃣ Log de debug opcional
+    console.log("TonConnectUI inicializado", tonConnectUI);
+  </script>-->
 </body>
 </html>
