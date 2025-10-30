@@ -1,4 +1,5 @@
 import { TonService } from '../services/tonService.js';
+import { PriceService } from '../services/priceService.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const tonService = new TonService();
@@ -40,6 +41,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     return false;
   };
+
+  
 
   // Função para encerrar a sessão
   const endSession = async () => {
@@ -85,6 +88,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     networkFeeElement.textContent = 'Taxa de Rede: -';
     console.log('Conexão confirmada, endereço da carteira exibido:', address);
     await updateBalance();
+    
+    // === ADIÇÃO: Preços em tempo real ===
+    const tonPriceEl = document.getElementById('ton-price');
+    const usdtPriceEl = document.getElementById('usdt-price');
+
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=the-open-network,tether&vs_currencies=usd');
+        const data = await response.json();
+        const ton = data['the-open-network']?.usd || 0;
+        const usdt = data['tether']?.usd || 1.00;
+        tonPriceEl.textContent = `TON: $${ton.toFixed(2)} USD`;
+        usdtPriceEl.textContent = `USDT: $${usdt.toFixed(2)} USD`;
+      } catch {
+        tonPriceEl.textContent = 'TON: Erro ao carregar';
+        usdtPriceEl.textContent = 'USDT: Erro ao carregar';
+      }
+    };
+    // === FIM DA ADIÇÃO ===
+
+    // === ADIÇÃO: PriceService para múltiplas moedas ===
+    /*const priceService = new PriceService();
+    const priceContainer = document.createElement('div');
+    priceContainer.id = 'price-container';
+    priceContainer.style.marginTop = '15px';
+    priceContainer.style.marginBottom = '0.2em';
+    priceContainer.style.fontSize = '0.9em';
+    document.getElementById('status').appendChild(priceContainer);
+
+    // Lista de moedas que você quer exibir
+    const COINS = [
+      { id: 'the-open-network', symbol: 'TON', name: 'TON', decimals: 4 },
+      { id: 'tether',           symbol: 'USDT', name: 'USDT', decimals: 4 },
+      { id: 'bitcoin',          symbol: 'BTC',  name: 'Bitcoin', decimals: 2 },
+      { id: 'ethereum',         symbol: 'ETH',  name: 'Ethereum', decimals: 2 },
+      { id: 'binancecoin',      symbol: 'BNB',  name: 'BNB', decimals: 2 },
+      { id: 'solana',           symbol: 'SOL',  name: 'Solana', decimals: 3 },
+    ];
+
+    const updatePrices = async () => {
+      const prices = await priceService.getPrices(COINS, 'usd');
+      priceContainer.innerHTML = '<strong>Preços em tempo real:</strong><br>' +
+        Object.values(prices)
+          .map(p => p ? `${p.name}: ${p.formatted} USD` : `${p?.name || '?'} N/A`)
+          .join('<br>');
+    };*/
+
+    // Atualiza ao carregar e a cada 30s
+    /*await updatePrices();
+    setInterval(updatePrices, 30000);*/
+
+    await fetchPrices();
+    setInterval(fetchPrices, 30000);
+    // === FIM DA ADIÇÃO ===
+
   } catch (error) {
     console.error('Erro na verificação da conexão:', error);
     operationMessage.textContent = `Status: Erro ao verificar conexão - ${error.message || 'Tente novamente ou conecte a carteira.'}`;
@@ -161,18 +219,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Estimar taxas
-    const totalAmount = amount + estimatedFees;
-
-    // Solicitar confirmação do usuário
-    /*const confirmTransaction = window.confirm(
-      `Você deseja enviar ${amount.toFixed(9)} TON para o endereço ${recipientAddress} usando a carteira ${currentWallet} na testnet?\nTaxa de Rede Estimada: ${estimatedFees.toFixed(4)} TON\nTotal: ${totalAmount.toFixed(9)} TON`
-    );
-    if (!confirmTransaction) {
-      operationMessage.textContent = 'Status: Transação cancelada pelo usuário.';
-      console.log('Transação cancelada pelo usuário');
-      return;
-    }*/
-
+    //const totalAmount = amount + estimatedFees;
     try {
       operationMessage.textContent = 'Status: Aguardando confirmação da carteira...';
       console.log('Enviando transação:', { recipientAddress, amount, wallet: currentWallet });
